@@ -1,0 +1,4 @@
+psycopg
+dotenv
+google
+google.genai
