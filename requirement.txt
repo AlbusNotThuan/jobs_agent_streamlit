@@ -1,4 +1,5 @@
 psycopg
+psycopg_binary
 dotenv
 google
 google.genai

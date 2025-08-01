@@ -43,6 +43,24 @@ class SkillsAnalyzerChatbot:
         self.client = genai.Client(api_key=API_KEY)
         self.conversation_history = []
         self.session_active = 1  # 1: session active, 0: session ended
+        self.max_autonomous_cycles = 10  # Prevent infinite loops
+        self.verbose_mode = False  # Set to True to see ReAct thinking process
+
+
+    def set_verbose_mode(self, verbose: bool = True) -> None:
+        """Enable/disable verbose mode to see ReAct thinking process.
+        
+        Args:
+            verbose: True to enable verbose output, False to disable
+            
+        Returns:
+            None
+        """
+        self.verbose_mode = verbose
+        if verbose:
+            print("🔍 Verbose mode enabled - You'll see the agent's reasoning process")
+        else:
+            print("🔇 Verbose mode disabled - Only final results will be shown")
 
 
     def end_session(self) -> None:
@@ -125,7 +143,7 @@ class SkillsAnalyzerChatbot:
         return response
     
     def chat(self, user_message: str) -> str:
-        """Main chat function with tool integration"""
+        """Main chat function with autonomous tool integration using ReAct framework"""
         # Import tools directly from skills_analyzer
         from skills_analyzer import (
             extract_in_demand_skills,
@@ -135,66 +153,93 @@ class SkillsAnalyzerChatbot:
             get_job_categories_analysis
         )
         from psycopg_query import query_database
+        
         # Configure tools for Gemini, including print_message and end_session
+        # Read system instruction from file
+        system_instruction_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "system_instruction.md")
+        try:
+            with open(system_instruction_path, "r", encoding="utf-8") as f:
+                system_instruction = f.read()
+        except Exception as e:
+            print(f"⚠️ Could not read system_instruction.md: {e}")
+            system_instruction = ""
+
         config = types.GenerateContentConfig(
             tools=[
-                extract_in_demand_skills,
-                get_hot_skills_last_month,
-                get_skills_by_category,
-                get_trending_skills_comparison,
-                get_job_categories_analysis,
-                self.print_message,
-                self.end_session,
-                query_database
+            # extract_in_demand_skills,
+            # get_hot_skills_last_month,
+            # get_skills_by_category,
+            # get_trending_skills_comparison,
+            # get_job_categories_analysis,
+            self.print_message,
+            self.end_session,
+            query_database
             ],
-system_instruction="""
-You are a LinkedIn Jobs Skills Analyzer AI Assistant. Your job is to help users analyze job market trends and skills demand.
-
-Guidelines:
-- Always use the available tools to answer user questions if needed. Do not fabricate or make up data.
-- You may use multiple tools in combination to provide the most complete and accurate answer.
-- Provide insights and recommendations based on the data you retrieve.
-- Format responses clearly, using emojis where appropriate.
-- Explain trends and what they mean for job seekers.
-- Be helpful, concise, and conversational.
-- If the user's question is related to database, data retrieval, or anything that can be answered by querying the database, you must use the query_database tool. Prioritize using this tool for all relevant queries.
-- When using the database, you must try to query as much as possible. If an error occurs, analyze the error, attempt to fix it, and retry the query. Repeat this process, and only stop after several failed attempts or if the errors cannot be resolved. Do not give up easily or abandon the task after a single failure.
-- When you have fulfilled all user requirements and provided all necessary information, call the print_message tool to display the final message to the user, and then call the end_session tool to end the session.
-- Do NOT call end_session until you have completed all user requests and printed the final message.
-"""
+            tool_config={'function_calling_config': {'mode': 'AUTO'}},  # Enable automatic tool calling
+            system_instruction=system_instruction
         )
         try:
-            # Add conversation context
+            # Enhanced prompt for autonomous behavior
+            autonomous_prompt = f"""
+AUTONOMOUS AGENT ACTIVATION:
+User Request: {user_message}
+
+Instructions: You are now operating as a fully autonomous agent. Follow the ReAct framework:
+1. THINK about what the user needs
+2. ACT by using tools immediately without asking permission  
+3. OBSERVE the results and continue until complete
+4. Provide comprehensive analysis and insights
+5. End by calling print_message with your final answer, then end_session
+
+Remember: NO CONFIRMATIONS NEEDED. Act immediately and autonomously.
+"""
+            
+            # Add conversation context for continuity
             conversation_context = ""
             if self.conversation_history:
-                conversation_context = "\n\nPrevious conversation:\n" + "\n".join(self.conversation_history[-4:])
-            full_message = user_message + conversation_context
+                conversation_context = "\n\nPrevious conversation context:\n" + "\n".join(self.conversation_history[-4:])
+            
+            full_message = autonomous_prompt + conversation_context
+            
+            if self.verbose_mode:
+                print(f"🧠 Sending autonomous prompt to agent...")
+            
             response = self.client.models.generate_content(
                 model="gemini-2.0-flash",
                 contents=full_message,
                 config=config
             )
-            # Store conversation
+            
+            # Store conversation for context
             self.conversation_history.append(f"User: {user_message}")
-            self.conversation_history.append(f"Assistant: {response.text}")
+            self.conversation_history.append(f"Agent: {response.text}")
+            
+            if self.verbose_mode:
+                print(f"🤖 Agent raw response: {response.text}")
+                
             return response.text
+            
         except Exception as e:
-            return f"❌ Error processing your request: {str(e)}"
+            error_msg = f"❌ Autonomous agent error: {str(e)}"
+            print(error_msg)
+            return error_msg
 
 def main():
-    """Main chatbot loop"""
-    print("🤖 LinkedIn Jobs Skills Analyzer Chatbot")
-    print("=" * 50)
-    print("Welcome! I can help you analyze job market skills and trends.")
-    print("Ask me questions like:")
+    """Main chatbot loop with autonomous agent support"""
+    print("🤖 LinkedIn Jobs Skills Analyzer - AUTONOMOUS AI AGENT")
+    print("=" * 60)
+    print("🚀 AUTONOMOUS MODE: The agent will act independently without confirmations")
+    print("📊 Ask me anything about job market skills and trends!")
+    print("\nExample queries:")
     print("• 'What are the most in-demand skills?'")
     print("• 'Show me hot AI/ML skills'") 
     print("• 'What programming languages are trending?'")
     print("• 'Analyze data science job requirements'")
-    print("\nType 'exit' to quit, 'help' for more info.")
-    print("=" * 50)
+    print("• 'Compare Python vs JavaScript demand'")
+    print("\n⚡ The agent will automatically query the database and provide insights")
+    print("📋 Special commands: 'help', 'verbose on/off', 'exit'")
+    print("=" * 60)
     
-   
     chatbot = SkillsAnalyzerChatbot()
     
     while True:
@@ -202,60 +247,46 @@ def main():
             chatbot.session_active = 1  # Reset session_active for each new user input
             user_input = input("\n💬 You: ").strip()
             
-            if user_input.lower() in ['exit', 'quit', 'bye']:
-                print("👋 Goodbye! Thanks for using the Skills Analyzer Chatbot!")
+            if user_input.lower() in ['exit', 'quit', 'bye', 'end']:
+                print("👋 Goodbye! Thanks for using the Autonomous Skills Analyzer!")
                 break
             
-            if user_input.lower() == 'help':
-                print("""
-🆘 HELP - Available Commands:
-
-📊 General Analysis:
-  • "analyze all skills" or "general overview"
-  • "most in-demand skills"
-
-🔥 Hot Skills:
-  • "hot skills" or "trending this month"
-  • "what's popular now"
-
-📂 Skills by Category:
-  • "programming skills" or "programming languages"
-  • "AI skills" or "machine learning skills"
-  • "data science skills"
-  • "cloud skills"
-  • "web development skills"
-
-📈 Trends:
-  • "skills trends" or "analyze trends"
-  • "what's trending in the last 30 days"
-
-💼 Job Categories:
-  • "job categories analysis"
-  • "skills by job type"
-
-🎯 Examples:
-  • "What are the most popular programming languages?"
-  • "Show me trending AI/ML skills"
-  • "What skills do data scientists need?"
-  • "Compare skills across different job types"
-                """)
+            # Special commands for autonomous agent
+            if user_input.lower() == 'verbose on':
+                chatbot.set_verbose_mode(True)
+                continue
+            elif user_input.lower() == 'verbose off':
+                chatbot.set_verbose_mode(False)
+                continue
+            elif user_input.lower() in ['help', 'commands']:
+                print("\n🆘 AUTONOMOUS AGENT COMMANDS:")
+                print("• 'verbose on/off' - Toggle detailed ReAct process visibility")
+                print("• 'exit' - Quit the application")
+                print("• Ask any question about job skills and the agent will work autonomously!")
                 continue
             
             if not user_input:
-                print("Please enter a question or type 'help' for assistance.")
+                print("Please enter a question to let the autonomous agent help you.")
                 continue
             
-            print("\n🤔 Analyzing your request...")
+            print("\n� AUTONOMOUS AGENT ACTIVATED - Working independently...")
+            print("🔄 Following ReAct framework: Reasoning → Acting → Observing")
             
             response = chatbot.chat(user_input)
-            print(f"\n🤖 Assistant:\n{response}")
+            
+            # Check if session was ended by the agent
+            if chatbot.session_active == 0:
+                print("\n✅ Task completed autonomously!")
+                chatbot.session_active = 1  # Reset for next query
+            else:
+                print(f"\n🤖 Agent Response:\n{response}")
             
         except KeyboardInterrupt:
-            print("\n\n👋 Goodbye! Thanks for using the Skills Analyzer Chatbot!")
+            print("\n\n👋 Goodbye! Thanks for using the Autonomous Skills Analyzer!")
             break
         except Exception as e:
             print(f"\n❌ An error occurred: {str(e)}")
-            print("Please try again or type 'help' for assistance.")
+            print("The autonomous agent will continue. Please try another query.")
 
 if __name__ == "__main__":
     main()
