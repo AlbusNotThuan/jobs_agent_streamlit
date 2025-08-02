@@ -3,3 +3,4 @@ psycopg_binary
 dotenv
 google
 google.genai
+streamlit
