@@ -45,6 +45,7 @@ class SkillsAnalyzerChatbot:
         self.session_active = 1  # 1: session active, 0: session ended
         self.max_autonomous_cycles = 10  # Prevent infinite loops
         self.verbose_mode = False  # Set to True to see ReAct thinking process
+        self.last_print_message = None  # Store the last message printed by the agent
 
 
     def set_verbose_mode(self, verbose: bool = True) -> None:
@@ -84,7 +85,8 @@ class SkillsAnalyzerChatbot:
         Returns:
             None
         """
-        print(message)
+        print(f"\n📋 {message}")
+        self.last_print_message = message  # Store for later reference
     
     
     def format_skills_response(self, data: Dict, analysis_type: str) -> str:
@@ -166,14 +168,14 @@ class SkillsAnalyzerChatbot:
 
         config = types.GenerateContentConfig(
             tools=[
-            # extract_in_demand_skills,
-            # get_hot_skills_last_month,
-            # get_skills_by_category,
-            # get_trending_skills_comparison,
-            # get_job_categories_analysis,
-            self.print_message,
-            self.end_session,
-            query_database
+                # extract_in_demand_skills,
+                # get_hot_skills_last_month,
+                # get_skills_by_category,
+                # get_trending_skills_comparison,
+                # get_job_categories_analysis,
+                self.print_message,
+                self.end_session,
+                query_database
             ],
             tool_config={'function_calling_config': {'mode': 'AUTO'}},  # Enable automatic tool calling
             system_instruction=system_instruction
@@ -189,9 +191,11 @@ Instructions: You are now operating as a fully autonomous agent. Follow the ReAc
 2. ACT by using tools immediately without asking permission  
 3. OBSERVE the results and continue until complete
 4. Provide comprehensive analysis and insights
-5. End by calling print_message with your final answer, then end_session
+5. IMPORTANT: Always provide a brief summary in your response BEFORE calling end_session
+6. Call print_message with your detailed findings, then end_session
 
 Remember: NO CONFIRMATIONS NEEDED. Act immediately and autonomously.
+Always include a summary of your findings in your final response text.
 """
             
             # Add conversation context for continuity
@@ -205,7 +209,7 @@ Remember: NO CONFIRMATIONS NEEDED. Act immediately and autonomously.
                 print(f"🧠 Sending autonomous prompt to agent...")
             
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 contents=full_message,
                 config=config
             )
@@ -269,17 +273,27 @@ def main():
                 print("Please enter a question to let the autonomous agent help you.")
                 continue
             
-            print("\n� AUTONOMOUS AGENT ACTIVATED - Working independently...")
-            print("🔄 Following ReAct framework: Reasoning → Acting → Observing")
+            print("\n🤖 AUTONOMOUS AGENT ACTIVATED - Working independently...")
+            if not chatbot.verbose_mode:
+                print("🔄 Following ReAct framework: Reasoning → Acting → Observing")
             
             response = chatbot.chat(user_input)
             
             # Check if session was ended by the agent
             if chatbot.session_active == 0:
-                print("\n✅ Task completed autonomously!")
+                print("\n✅ AUTONOMOUS TASK COMPLETED!")
+                if chatbot.last_print_message:
+                    print("📊 The agent has provided detailed analysis above.")
+                else:
+                    print("🔍 The agent completed the analysis. Use 'verbose on' to see more details.")
                 chatbot.session_active = 1  # Reset for next query
+                chatbot.last_print_message = None  # Reset stored message
             else:
-                print(f"\n🤖 Agent Response:\n{response}")
+                # If session is still active, show the response
+                if response and response.strip():
+                    print(f"\n🤖 Agent Response:\n{response}")
+                else:
+                    print("\n🤖 Agent is working... (use 'verbose on' to see details)")
             
         except KeyboardInterrupt:
             print("\n\n👋 Goodbye! Thanks for using the Autonomous Skills Analyzer!")
