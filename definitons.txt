@@ -1,0 +1,320 @@
+ABAP	 SAP, Advanced Business Application Programming, SAP NetWeaver, S/4HANA, R/3, BAPI, IDoc, SAP Developer, SAP Consultant
+AI	 Artificial Intelligence, Machine Learning, ML, Deep Learning, DL, Natural Language Processing, NLP, Computer Vision, Generative AI, LLM, prompt engineering, AI Engineer, ML Engineer
+API	 Application Programming Interface, REST, RESTful, GraphQL, gRPC, SOAP, Web API, API design, API gateway, microservices, backend development, integration
+AVR	 microcontroller, Atmel, Microchip, embedded systems, C, C++, firmware, electronics, IoT
+AWS	 Amazon Web Services, cloud computing, EC2, S3, RDS, Lambda, DynamoDB, VPC, IAM, CloudFormation, EKS, SQS, SNS, Cloud Engineer, DevOps Engineer, Solutions Architect
+AWS CloudFormation	 AWS, CloudFormation, IaC, Infrastructure as Code, templates, stacks, YAML, JSON
+AWS Lambda	 AWS Lambda, serverless, functions, FaaS, event-driven, API Gateway
+Adobe Illustrator	 Illustrator, vector graphics, logos, icons, illustrations, SVG, Graphic Designer
+Adobe Photoshop	 Photoshop, image editing, photo manipulation, raster graphics, UI design, mockups
+Adobe XD	 Adobe XD, UI/UX design, prototyping, wireframing, user interface, user experience
+Agile	 Agile, Scrum, Kanban, sprints, user stories, backlog, daily stand-up, retrospective, JIRA
+Android	 Android development, Android SDK, Kotlin, Java, Android Studio, mobile apps, Gradle
+Android studio	 Android Studio, IDE, Android development, Gradle, emulator, APK
+Angular	 Angular, AngularJS, TypeScript, RxJS, NgRx, single-page application (SPA), frontend
+AngularJS	 AngularJS, Angular 1.x, legacy frontend, JavaScript framework, two-way binding
+Ansible	 Ansible, configuration management, automation, playbooks, YAML, IaC, DevOps, infrastructure as code
+Apache Airflow	 Airflow, data pipeline, ETL, DAGs, workflow orchestration, Python, Data Engineer
+Apache HttpClient	 HttpClient, Java, HTTP requests, API client, REST client
+Apache Spark	 Spark, big data, distributed computing, PySpark, Scala, Spark SQL, RDDs, DataFrames, Databricks
+Apex	 Apex, Salesforce, SFDC, Triggers, Visualforce, Lightning Components, Salesforce Developer
+Appium	 Appium, mobile testing, automation, iOS, Android, Selenium WebDriver, QA Automation
+Application Security	 AppSec, SAST, DAST, IAST, SCA, secure coding, OWASP Top 10, code review, threat modeling, Security Engineer
+Automation Test	 Test Automation, QA Automation, Selenium, Cypress, Playwright, Appium, automated testing, test scripts
+Azure	 Microsoft Azure, cloud computing, Azure VMs, Blob Storage, Azure SQL, Azure Functions, DevOps, ARM templates
+BLE	 Bluetooth Low Energy, IoT, peripherals, GATT, beacons, embedded systems
+BPMN	 Business Process Model and Notation, process modeling, workflow, Visio, Camunda, business analysis
+Bash Shell	 Bash, shell scripting, command line, CLI, Linux, Unix, automation scripts, DevOps
+Big Data	 Big Data, Hadoop, Spark, Hive, Kafka, HDFS, MapReduce, NoSQL, data processing, Data Engineer
+BigCommerce	 BigCommerce, e-commerce platform, headless commerce, Stencil, API
+Blazor	 Blazor, C#, .NET, WebAssembly, WASM, server-side, client-side, frontend
+Blender	 Blender, 3D modeling, animation, rendering, sculpting, game assets, open source
+Blockchain	 Blockchain, cryptocurrency, smart contracts, Solidity, Ethereum, Web3, distributed ledger, DLT
+Bootstrap	 Bootstrap, CSS framework, responsive design, frontend, HTML, CSS, JavaScript, grid system
+Bridge Engineer	 Bridge design, structural analysis, civil engineering, AutoCAD, SAP2000, LUSAS
+Burp Suite	 Burp Suite, web application security, penetration testing, pentest, DAST, vulnerability scanning
+Business Analysis	 Business Analysis, requirements gathering, user stories, process modeling, BPMN, stakeholder management, BA
+Business Intelligence	 BI, data warehousing, dashboards, reporting, Power BI, Tableau, Qlik, SQL, data visualization, BI Developer
+C language	 C, systems programming, embedded systems, memory management, pointers, low-level
+C#	 C#, C-sharp, .NET, ASP.NET, Unity, Xamarin, object-oriented programming, OOP
+C++	 C++, C plus plus, OOP, high-performance computing, game development, Unreal Engine, systems programming, STL
+CI/CD	 CI/CD, Continuous Integration, Continuous Delivery, Continuous Deployment, Jenkins, GitLab CI, GitHub Actions, CircleCI, pipelines, DevOps
+CRM	 CRM, Customer Relationship Management, Salesforce, Microsoft Dynamics 365, HubSpot, sales, marketing
+CSS	 CSS, CSS3, Cascading Style Sheets, Flexbox, Grid, SASS, SCSS, LESS, responsive design, frontend
+Chinese	 Mandarin, Cantonese, written Chinese, fluent, bilingual, translation, localization
+Cisco	 Cisco, networking, routers, switches, firewalls, CCNA, CCNP, network security, IOS
+Clean Architecture	 Clean Architecture, software design, separation of concerns, SOLID, domain-driven design, hexagonal architecture
+Cloud	 Cloud Computing, AWS, Azure, GCP, IaaS, PaaS, SaaS, serverless, cloud migration
+Cloud Security	 Cloud Security, AWS Security, Azure Security, GCP Security, IAM, VPC, security groups, compliance, CSPM
+Cloud-native Architecture	 Cloud-native, microservices, containers, Docker, Kubernetes, serverless, service mesh, DevOps
+CloudFormation	 AWS CloudFormation, IaC, Infrastructure as Code, templates, stacks, YAML, JSON, AWS
+CompTIA Security+	 Security+, Sec+, cybersecurity fundamentals, network security, compliance, risk management
+Computer Vision	 Computer Vision, CV, image processing, object detection, image recognition, OpenCV, TensorFlow, PyTorch
+Container Security	 Container Security, Docker security, Kubernetes security, image scanning, runtime security, Aqua, Twistlock, Falco
+Cryptography	 Cryptography, encryption, decryption, hashing, PKI, SSL/TLS, digital signatures, cybersecurity
+Cucumber	 Cucumber, BDD, Behavior-Driven Development, Gherkin, feature files, test automation, Selenium
+Cybersecurity	 Cybersecurity, Information Security, InfoSec, threat intelligence, incident response, SIEM, pentesting, vulnerability management
+Cypress	 Cypress, E2E testing, end-to-end testing, JavaScript, test automation, frontend testing, QA
+DBA	 Database Administrator, SQL Server, Oracle, MySQL, PostgreSQL, performance tuning, backup, recovery, database management
+DBT	 DBT, Data Build Tool, data transformation, ELT, SQL, analytics engineering, data modeling, BigQuery, Snowflake
+DNS Security	 DNS Security, DNSSEC, DNS filtering, threat intelligence, network security
+Dart	 Dart, Flutter, mobile development, front-end development, Google
+Data Analysis	 Data Analysis, SQL, Excel, Python, Pandas, R, statistics, data visualization, Tableau, Power BI, Data Analyst
+Data Engineer	 Data Engineer, ETL, ELT, data pipelines, Airflow, Spark, Kafka, SQL, NoSQL, data warehousing, Python
+Data Privacy / Compliance	 Data Privacy, GDPR, CCPA, HIPAA, data protection, PII, compliance, risk management
+Data Science	 Data Science, Machine Learning, Python, R, Scikit-learn, Pandas, NumPy, statistics, modeling, Jupyter, Data Scientist
+Data Warehousing	 Data Warehouse, DWH, ETL, OLAP, dimensional modeling, star schema, Snowflake, Redshift, BigQuery, SQL
+Data cleaning	 Data cleaning, data wrangling, data preprocessing, data quality, data validation, Pandas, SQL
+Data mining	 Data mining, pattern recognition, KDD, knowledge discovery, clustering, classification, association rules
+Data modeling	 Data modeling, database design, ERD, entity-relationship diagram, relational, NoSQL, schema design, star schema
+Data-driven	 Data-driven decision making, analytics, metrics, KPIs, A/B testing, business intelligence
+Database	 Database, SQL, NoSQL, relational, RDBMS, MongoDB, PostgreSQL, MySQL, Oracle, SQL Server
+Databricks	 Databricks, Apache Spark, big data, data engineering, data science, Delta Lake, notebook, MLflow
+Deep Learning	 Deep Learning, DL, neural networks, CNN, RNN, TensorFlow, PyTorch, Keras, AI, Machine Learning
+Design	 Design, UI/UX, product design, graphic design, visual design, user-centered design
+Design Systems	 Design System, component library, style guide, UI patterns, Figma, Storybook, reusable components
+DevOps	 DevOps, CI/CD, automation, infrastructure as code, IaC, Docker, Kubernetes, Jenkins, Ansible, Terraform, monitoring, SRE
+DevSecOps	 DevSecOps, secure SDLC, SAST, DAST, container security, shift-left security, application security
+Django	 Django, Python, web framework, Django REST Framework, ORM, backend development
+Docker	 Docker, containers, containerization, Dockerfile, Docker Compose, microservices, DevOps
+Drupal	 Drupal, CMS, content management system, PHP, web development, themes, modules
+DynamoDB	 DynamoDB, AWS, NoSQL, key-value, document database, serverless, highly scalable
+ELK Stack	 ELK, Elasticsearch, Logstash, Kibana, logging, monitoring, data visualization, observability
+ELT	 ELT, Extract Load Transform, data warehousing, data engineering, Snowflake, BigQuery, dbt
+ERP	 ERP, Enterprise Resource Planning, SAP, Oracle NetSuite, Microsoft Dynamics 365, business processes
+ETL	 ETL, Extract Transform Load, data integration, data warehousing, data pipelines, Informatica, Talend, SSIS
+Elasticsearch	 Elasticsearch, search engine, full-text search, analytics, logging, ELK stack, Lucene
+Electron	 Electron, desktop applications, JavaScript, HTML, CSS, Node.js, cross-platform
+Elixir	 Elixir, functional programming, Erlang, BEAM, Phoenix framework, concurrency, fault-tolerant systems
+Embedded	 Embedded systems, firmware, microcontroller, MCU, C, C++, RTOS, IoT, hardware
+Embedded C	 Embedded C, C programming, firmware, microcontrollers, bare-metal, hardware interface
+English	 English, fluent, proficient, native, communication, written, verbal
+Enterprise Architecture	 Enterprise Architecture, TOGAF, Zachman, solution architecture, IT strategy, business alignment
+Entity Framework	 Entity Framework, EF Core, .NET, C#, ORM, object-relational mapping, LINQ, database access
+Ethers.js	 Ethers.js, Ethereum, JavaScript, Web3, blockchain, dApp, smart contracts
+Exploit Development	 Exploit development, reverse engineering, vulnerability research, buffer overflow, shellcode, cybersecurity
+ExpressJS	 Express, Express.js, Node.js, web framework, API development, backend, JavaScript, middleware
+FastAPI	 FastAPI, Python, web framework, API development, asynchronous, Pydantic, Swagger, OpenAPI
+Figma	 Figma, UI/UX design, prototyping, wireframing, collaboration, design systems, interface design
+Fiori	 SAP Fiori, UI5, user experience, SAP applications, front-end, design principles
+Firebase	 Firebase, Google, BaaS, backend-as-a-service, Realtime Database, Firestore, Authentication, Cloud Functions, mobile backend
+Firewall	 Firewall, network security, access control lists, ACL, WAF, Next-Generation Firewall, NGFW, Palo Alto, Cisco ASA
+Firmware	 Firmware, embedded systems, C, C++, microcontrollers, MCU, RTOS, low-level programming
+Flask	 Flask, Python, microframework, web development, REST API, Jinja2, SQLAlchemy
+Flutter	 Flutter, Dart, mobile app development, cross-platform, iOS, Android, UI toolkit
+Fullstack	 Fullstack, front-end, back-end, JavaScript, React, Node.js, Python, Java, database, API
+Functional specifications	 Functional specifications, requirements documentation, use cases, business requirements, system design
+GCP	 Google Cloud Platform, GCP, GKE, BigQuery, Cloud Functions, Compute Engine, cloud computing
+Games	 Game development, Unity, Unreal Engine, C++, C#, gameplay programming, game design
+Gatling	 Gatling, performance testing, load testing, stress testing, Scala, performance engineering, QA
+Generative AI	 Generative AI, GenAI, LLM, large language models, GPT, prompt engineering, diffusion models, text generation
+Gin	 Gin, Go, Golang, web framework, high-performance, API development, backend
+Git	 Git, version control, source control, git commit, git push, git pull, git branch, git merge, GitHub, GitLab
+GitHub	 GitHub, Git, version control, source code management, repository, pull request, code review, GitHub Actions
+GitHub Actions	 GitHub Actions, CI/CD, automation, workflows, YAML, DevOps, continuous integration
+GitLab	 GitLab, Git, version control, CI/CD, DevOps platform, repository, merge request
+GitLab CI	 GitLab CI, continuous integration, CI/CD, .gitlab-ci.yml, pipelines, jobs, runners, DevOps
+Golang	 Go, Golang, concurrency, microservices, backend development, cloud-native, Google
+Google BigQuery	 BigQuery, GCP, data warehouse, SQL, analytics, big data, serverless
+Google Cloud	 Google Cloud Platform, GCP, GKE, BigQuery, Cloud Functions, Compute Engine, cloud computing
+Governance	 IT Governance, data governance, compliance, risk, policy, framework, COBIT
+Grafana	 Grafana, monitoring, observability, dashboards, visualization, Prometheus, time-series data
+GraphQL	 GraphQL, API, query language, Apollo, Relay, backend, frontend, data fetching
+Groovy	 Groovy, Java, JVM, scripting language, Jenkins, Gradle, Spock framework
+HTML	 HTML, HTML5, hypertext markup language, semantic HTML, web development, frontend
+Hardware Troubleshooting	 hardware support, diagnostics, PC repair, component replacement, A+ certification, IT support
+Hugging Face Transformers	 Hugging Face, Transformers, NLP, natural language processing, BERT, GPT, PyTorch, TensorFlow, LLM
+IT Audit	 IT Audit, compliance, risk assessment, controls, SOX, CISA, information security audit
+IT Communication	 stakeholder communication, technical explanation, documentation, presentation, reporting
+IT Governance	 IT Governance, COBIT, ITIL, risk management, compliance, policy, strategy
+IT Support	 IT Support, help desk, technical support, troubleshooting, ticketing system, Active Directory
+ITIL Foundation	 ITIL, IT Service Management, ITSM, incident management, problem management, change management
+Illustrator	 Adobe Illustrator, vector graphics, logos, icons, illustrations, graphic design
+InDesign	 Adobe InDesign, desktop publishing, layout design, brochures, magazines, print design
+Incident Response	 Incident Response, IR, cybersecurity, security incident, forensics, malware analysis, SIEM
+Information Security	 Information Security, InfoSec, cybersecurity, risk management, compliance, security policies, CISM, CISSP
+Integration test	 Integration testing, E2E testing, API testing, system testing, QA, software testing
+Interaction Design	 Interaction Design, IxD, user experience, UX, user flows, wireframes, prototypes, human-computer interaction
+IoT	 Internet of Things, IoT, embedded systems, sensors, MQTT, Raspberry Pi, Arduino, connected devices
+J2EE	 J2EE, Jakarta EE, Java Enterprise Edition, Servlets, JSP, EJB, application server, enterprise Java
+JUnit	 JUnit, Java, unit testing, test framework, TDD, test-driven development, Mockito
+JSON	 JSON, JavaScript Object Notation, data format, data interchange, API, REST, serialization
+Japanese	 Japanese, JLPT, fluent, bilingual, translation, localization, business level
+Java	 Java, Spring, Spring Boot, Hibernate, Maven, Gradle, J2EE, JVM, object-oriented programming, OOP
+JavaScript	 JavaScript, JS, ES6, ES2020, vanilla JS, front-end, back-end, Node.js, React, Angular, Vue
+Jenkins	 Jenkins, CI/CD, automation server, continuous integration, pipelines, Jenkinsfile, Groovy, DevOps
+Jest	 Jest, JavaScript testing, unit testing, snapshot testing, mocking, React, Node.js, QA
+Jira	 Jira, project management, agile, scrum, kanban, tickets, issues, user stories, backlog grooming
+Jmeter	 JMeter, performance testing, load testing, stress testing, test plan, Apache JMeter
+jQuery	 jQuery, JavaScript library, DOM manipulation, event handling, AJAX, front-end
+Kafka	 Apache Kafka, streaming platform, message broker, event streaming, distributed systems, pub/sub, Zookeeper
+Kotlin	 Kotlin, Android development, Java, JVM, coroutines, modern programming language, Google
+Kubernetes	 Kubernetes, K8s, container orchestration, Docker, microservices, pods, deployments, services, Helm, DevOps
+LINQ	 LINQ, Language-Integrated Query, C#, .NET, data querying, Entity Framework, collections
+LLM	 Large Language Model, LLM, Generative AI, GPT, BERT, prompt engineering, fine-tuning, NLP
+Laravel	 Laravel, PHP, web framework, MVC, Artisan, Eloquent ORM, Blade, backend development
+Leadership	 Leadership, team management, mentoring, strategy, decision making, project lead, tech lead
+Lean Project Management	 Lean, value stream mapping, waste reduction, continuous improvement, Kanban, project management
+Linux	 Linux, Unix, Ubuntu, CentOS, Red Hat, RHEL, command line, CLI, shell scripting, system administration
+Lua	 Lua, scripting language, lightweight, embedded, game development, Nginx, Redis
+MFA	 Multi-Factor Authentication, MFA, 2FA, two-factor authentication, security, IAM, identity management
+MFC	 Microsoft Foundation Classes, C++, Windows applications, desktop development, Visual Studio
+MLOps	 MLOps, Machine Learning Operations, CI/CD for ML, model deployment, monitoring, versioning, Kubeflow, MLflow
+MVC	 Model-View-Controller, MVC, design pattern, software architecture, ASP.NET, Spring MVC, Ruby on Rails
+MVVM	 Model-View-ViewModel, MVVM, design pattern, UI separation, WPF, Xamarin, Angular, Vue.js
+Machine Learning	 Machine Learning, ML, AI, supervised learning, unsupervised learning, Python, Scikit-learn, TensorFlow, PyTorch, predictive modeling
+Magento	 Magento, Adobe Commerce, e-commerce platform, PHP, Zend framework, extensions, themes
+Market research	 Market research, competitor analysis, user surveys, data analysis, product strategy, product management
+Matlab	 Matlab, numerical computing, data analysis, simulation, algorithm development, signal processing
+Maven	 Maven, build automation tool, dependency management, Java, project management, pom.xml
+Metabase	 Metabase, business intelligence, BI, data visualization, dashboards, open source, SQL queries
+Microservices	 Microservices, microservice architecture, distributed systems, API gateway, Docker, Kubernetes, service discovery
+Microservices Architecture	 Microservices Architecture, design patterns, distributed systems, API gateway, containerization, event-driven
+Microsoft Azure SQL Database	 Azure SQL, PaaS, managed database, Microsoft Azure, SQL Server
+Microsoft Dynamics 365	 Dynamics 365, D365, CRM, ERP, Power Platform, Common Data Service
+Microsoft Power Apps	 Power Apps, Power Platform, low-code, no-code, app development, business applications
+Microsoft SQL Server	 SQL Server, MSSQL, T-SQL, SSIS, SSAS, SSRS, database administration, DBA
+Middleware	 Middleware, message queue, API gateway, enterprise service bus, ESB, application integration
+MobX	 MobX, state management, React, JavaScript, observable, frontend
+Mobile Apps	 Mobile App Development, iOS, Android, Swift, Kotlin, React Native, Flutter, native, cross-platform
+MongoDB	 MongoDB, NoSQL, document database, BSON, Mongoose, MEAN stack, MERN stack, database
+Motion Design	 Motion Design, After Effects, animation, microinteractions, UI animation, Lottie
+MySQL	 MySQL, relational database, RDBMS, SQL, database administration, LAMP stack
+NLP	 Natural Language Processing, NLP, text analysis, sentiment analysis, NER, topic modeling, spaCy, NLTK, Transformers
+Neo4j	 Neo4j, graph database, Cypher, nodes, relationships, graph theory
+NestJS	 NestJS, Node.js, TypeScript, backend framework, microservices, GraphQL, progressive Node.js framework
+NetSuite	 NetSuite, Oracle NetSuite, ERP, CRM, e-commerce, cloud business management
+Networking	 Networking, TCP/IP, OSI model, routing, switching, DNS, DHCP, firewalls, Cisco, Juniper
+Next.js	 Next.js, React framework, server-side rendering, SSR, static site generation, SSG, Vercel, frontend
+Nmap	 Nmap, network scanning, port scanning, security auditing, penetration testing, cybersecurity
+NoSQL	 NoSQL, MongoDB, Cassandra, Redis, DynamoDB, document, key-value, column-family, graph, non-relational database
+NodeJS	 Node.js, Node, JavaScript, backend, Express.js, asynchronous, non-blocking I/O, V8 engine
+Nuxt.js	 Nuxt.js, Vue.js framework, server-side rendering, SSR, static site generation, SSG, universal apps
+OCR	 Optical Character Recognition, OCR, image to text, document scanning, computer vision, Tesseract
+OLTP	 Online Transaction Processing, OLTP, transactional databases, high throughput, low latency, RDBMS
+OOP	 Object-Oriented Programming, OOP, classes, objects, inheritance, polymorphism, encapsulation, Java, C++, Python
+OWASP	 OWASP, Open Web Application Security Project, Top 10, application security, web security, secure coding
+Objective C	 Objective-C, iOS development, macOS, Cocoa, Apple, legacy mobile development
+Odoo	 Odoo, ERP, open source, CRM, business applications, Python
+OpenCV	 OpenCV, computer vision, image processing, video analysis, C++, Python, machine learning
+OpenStack	 OpenStack, IaaS, private cloud, cloud computing, Nova, Swift, Cinder, Neutron
+Oracle	 Oracle Database, SQL, PL/SQL, RDBMS, database administration, DBA, Oracle Cloud
+OutSystems	 OutSystems, low-code platform, rapid application development, mobile apps, web apps
+PHP	 PHP, web development, server-side scripting, Laravel, Symfony, WordPress, LAMP stack
+PL/SQL	 PL/SQL, Oracle, procedural language, stored procedures, triggers, database programming
+PQA	 Process Quality Assurance, PQA, quality management, standards, CMMI, ISO 9001
+Pandas	 Pandas, Python, data analysis, data manipulation, DataFrame, data science, data wrangling
+Penetration Testing	 Penetration testing, pentest, ethical hacking, vulnerability assessment, web application security, network security
+Pentest	 Pentest, penetration testing, ethical hacking, security testing, red team, offensive security
+Playwright	 Playwright, E2E testing, browser automation, Microsoft, test automation, TypeScript, JavaScript
+PostgreSql	 PostgreSQL, Postgres, relational database, RDBMS, SQL, open source database
+Postman	 Postman, API testing, API client, REST, GraphQL, manual testing, automated testing, collections
+Power BI	 Power BI, business intelligence, BI, data visualization, dashboards, DAX, Microsoft
+PowerShell	 PowerShell, scripting, automation, command-line, Windows, system administration, .NET
+Presale	 Presales, pre-sales, solution consulting, technical sales, proof of concept, POC, RFP, RFI
+Product Design	 Product Design, UI/UX, user research, prototyping, product development, user-centered design, Figma
+Product Management	 Product Management, product roadmap, backlog, prioritization, user stories, A/B testing, go-to-market, Product Manager, PM
+Product Owner	 Product Owner, PO, agile, scrum, backlog management, user stories, stakeholder management
+Product canvas	 Product canvas, lean startup, business model canvas, product strategy, validation
+Product roadmap	 Product roadmap, strategy, vision, timeline, features, prioritization, product management
+Project Management	 Project Management, PMP, Prince2, agile, scrum, scope, budget, timeline, risk management, Gantt chart
+Prometheus	 Prometheus, monitoring, alerting, time-series database, PromQL, Grafana, observability, DevOps
+Prompt Engineering	 Prompt Engineering, generative AI, LLM, GPT, prompt design, AI interaction
+Prototyping	 Prototyping, UI/UX, wireframing, mockups, interactive prototype, Figma, Sketch, Adobe XD
+PyTorch	 PyTorch, deep learning, machine learning, AI, Python, tensors, neural networks, Facebook AI
+Python	 Python, Django, Flask, Pandas, NumPy, Scikit-learn, data science, machine learning, web development, scripting
+QA QC	 Quality Assurance, Quality Control, testing, manual testing, automated testing, bug tracking, test cases
+QlikView	 QlikView, Qlik Sense, business intelligence, BI, data visualization, dashboards, analytics
+Qt	 Qt, cross-platform, application framework, C++, UI development, desktop, mobile, embedded
+REST Assured	 REST Assured, API testing, test automation, Java, RESTful services, BDD
+ROS	 Robot Operating System, ROS, robotics, software framework, C++, Python, simulation
+RPA	 Robotic Process Automation, RPA, UIPath, Automation Anywhere, Blue Prism, process automation, bots
+Razor	 Razor, ASP.NET, C#, view engine, HTML templating, Blazor
+React Native	 React Native, mobile development, cross-platform, JavaScript, React, iOS, Android
+ReactJS	 React, React.js, JavaScript library, front-end, UI, components, hooks, Redux, SPA
+Redis	 Redis, in-memory data store, cache, message broker, key-value, NoSQL
+Redux	 Redux, state management, JavaScript, React, predictable state container, actions, reducers
+Retrofit	 Retrofit, Android, Java, Kotlin, HTTP client, REST API, type-safe
+Risk & Compliance	 Risk management, compliance, GDPR, SOX, HIPAA, security frameworks, audit, GRC
+Robot Framework	 Robot Framework, test automation, acceptance testing, ATDD, keyword-driven, Python
+Robotic Process Automation (RPA)	 RPA, UIPath, Automation Anywhere, Blue Prism, business process automation, software robots
+Ruby	 Ruby, programming language, Ruby on Rails, scripting, object-oriented
+Ruby on Rails	 Ruby on Rails, RoR, web framework, MVC, Ruby, backend development
+Rust	 Rust, systems programming, performance, memory safety, concurrency, WebAssembly
+RxJS	 RxJS, ReactiveX, reactive programming, observables, streams, JavaScript, Angular
+SAP	 SAP, ERP, S/4HANA, FICO, SD, MM, ABAP, business processes, enterprise software
+SAP BusinessObjects	 BusinessObjects, BO, BI, reporting, analytics, Web Intelligence, Crystal Reports
+SAS	 SAS, statistical software, analytics, data analysis, business intelligence, data mining
+SCSS	 SCSS, Sassy CSS, CSS preprocessor, variables, mixins, nesting, front-end
+SIEM	 SIEM, Security Information and Event Management, log management, threat detection, Splunk, QRadar, ArcSight
+SOLID Principles	 SOLID, object-oriented design, OOP, single responsibility, open-closed, Liskov substitution, interface segregation, dependency inversion
+SQLite	 SQLite, embedded database, lightweight, mobile, SQL, serverless database
+SRS	 Software Requirements Specification, SRS, requirements documentation, functional, non-functional
+Salesforce	 Salesforce, SFDC, CRM, Sales Cloud, Service Cloud, Apex, Visualforce, Lightning, administrator, developer
+Salesforce Lightning	 Salesforce Lightning, LWC, Aura Components, modern UI, SFDC development
+Sass	 Sass, CSS preprocessor, Syntactically Awesome Style Sheets, front-end, variables, mixins
+Scala	 Scala, JVM, functional programming, object-oriented, Akka, Spark, big data
+Scrum	 Scrum, agile, framework, sprints, daily stand-up, product owner, scrum master, backlog
+Security	 Security, cybersecurity, information security, application security, network security, cloud security
+Security Awareness Training	 security awareness, phishing, social engineering, compliance, employee training
+Selenium	 Selenium, test automation, browser automation, WebDriver, QA, web testing, Java, Python
+ServiceNow	 ServiceNow, ITSM, IT Service Management, platform, workflow automation, ITIL
+Sharepoint	 SharePoint, Microsoft, document management, collaboration, intranet, Office 365
+Shopify	 Shopify, e-commerce platform, Liquid, themes, apps, online store
+Sketch	 Sketch, UI/UX design, vector graphics, prototyping, digital design, macOS
+Snowflake	 Snowflake, data warehouse, cloud data platform, SQL, data sharing, ELT
+Software Architecture	 Software Architecture, system design, microservices, monolithic, design patterns, solution architecture
+Solidity	 Solidity, Ethereum, smart contracts, blockchain, dApps, Web3
+Solution Architecture	 Solution Architecture, system design, technical strategy, cloud architecture, enterprise architecture
+Spark	 Apache Spark, big data, distributed computing, PySpark, Scala, Spark SQL, DataFrames
+Splunk	 Splunk, SIEM, log analysis, machine data, monitoring, dashboards, security
+Spring	 Spring Framework, Java, dependency injection, IoC, Spring MVC, enterprise applications
+Spring Boot	 Spring Boot, Java, microservices, REST API, auto-configuration, Spring Framework
+Stakeholder management	 Stakeholder management, communication, expectation management, project management, product management
+Statistical Analysis	 Statistical analysis, statistics, R, Python, SAS, hypothesis testing, regression, data science
+Strapi	 Strapi, headless CMS, Node.js, JavaScript, API, content management
+Strategy planning	 Strategic planning, business strategy, roadmap, market analysis, competitive analysis, long-term goals
+Swift	 Swift, iOS development, macOS, watchOS, Apple, mobile app development, Xcode
+Symfony	 Symfony, PHP, web framework, components, MVC, backend development
+System Admin	 System Administrator, SysAdmin, Linux, Windows Server, networking, scripting, infrastructure management
+System Architecture	 System Architecture, software design, high-level design, components, interfaces, system design
+T-SQL	 T-SQL, Transact-SQL, Microsoft SQL Server, stored procedures, functions, database programming
+Tableau	 Tableau, data visualization, business intelligence, BI, dashboards, analytics
+Team Management	 Team management, leadership, mentoring, performance reviews, resource planning, project lead
+Technical Writing	 Technical Writing, documentation, user guides, API documentation, manuals, knowledge base
+TensorFlow	 TensorFlow, deep learning, machine learning, AI, Python, neural networks, Google Brain
+Terraform	 Terraform, Infrastructure as Code, IaC, HCL, AWS, Azure, GCP, cloud provisioning, DevOps
+TestComplete	 TestComplete, automated UI testing, desktop, web, mobile, QA automation
+TestLink	 TestLink, test management tool, test cases, test plans, requirements tracking
+TestNG	 TestNG, testing framework, Java, unit testing, integration testing, parallel execution
+TestRail	 TestRail, test case management, QA, test plans, reporting, software testing
+Tester	 Tester, QA, Quality Assurance, manual testing, automated testing, bug reporting, test cases
+TypeScript	 TypeScript, TS, JavaScript superset, static typing, front-end, back-end, Angular, React
+UI-UX	 UI/UX, User Interface, User Experience, design, wireframing, prototyping, user research, Figma, Sketch
+UML	 UML, Unified Modeling Language, software design, diagrams, use case, sequence, class diagram
+Ui5	 SAPUI5, UI5, SAP, Fiori, front-end, JavaScript framework, enterprise applications
+Unit test	 Unit testing, TDD, BDD, JUnit, NUnit, Jest, Pytest, code quality, software testing
+Unity	 Unity, game engine, game development, C#, 2D, 3D, AR, VR
+Unix	 Unix, Linux, operating system, shell, command line, system administration
+Unreal Engine	 Unreal Engine, UE4, UE5, game engine, game development, C++, Blueprints, 3D graphics
+Usability testing	 Usability testing, user research, UX, user feedback, think-aloud protocol, product design
+User diagram	 User flow, user journey map, diagram, UX design, process flow
+User story	 User story, agile, scrum, requirements, acceptance criteria, backlog item, As a user...
+VMware	 VMware, virtualization, vSphere, ESXi, vCenter, private cloud, data center
+Visual Design	 Visual Design, UI design, graphic design, typography, color theory, layout, branding
+VueJS	 Vue, Vue.js, JavaScript framework, front-end, single-page application, SPA, Vuex, Nuxt.js
+Vulnerability Assessment	 Vulnerability assessment, security scanning, Nessus, Qualys, OpenVAS, cybersecurity, risk analysis
+WPF	 Windows Presentation Foundation, WPF, .NET, C#, desktop application, XAML, MVVM
+Waterfall Methodology	 Waterfall model, SDLC, sequential design, project management, requirements, design, implementation, testing
+Web API	 Web API, RESTful API, ASP.NET, C#, HTTP services, backend development
+Web3.js	 Web3.js, Ethereum, JavaScript, blockchain, dApp, smart contracts
+Windows	 Microsoft Windows, Windows OS, desktop support, system administration
+Windows Server	 Windows Server, Active Directory, Group Policy, DNS, DHCP, IIS, system administration
+Wireframing	 Wireframing, UX design, lo-fi, low-fidelity prototype, screen layout, UI structure, Balsamiq, Figma
+WooCommerce	 WooCommerce, WordPress, e-commerce, plugin, online store, PHP
+WordPress	 WordPress, CMS, content management system, PHP, themes, plugins, Gutenberg
+Zephyr	 Zephyr, Jira plugin, test management, QA, test cases, test cycles
+iOS	 iOS, mobile development, Swift, Objective-C, Xcode, iPhone, iPad, Apple
+k6	 k6, load testing, performance testing, Grafana, JavaScript, performance engineering, SRE
+vb.net	 VB.NET, Visual Basic .NET, .NET Framework, Windows applications, legacy code
+
