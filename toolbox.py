@@ -459,7 +459,7 @@ if __name__ == "__main__":
     print("Testing skill frequency plotting...")
     
     # Example 1: Single skill
-    path1 = plot_skill_frequency("Python")
+    path1 = plot_skill_frequency(["english", "AI"])
     print(f"Graph 1 saved to: {path1}")
     
     # Example 2: Multiple skills

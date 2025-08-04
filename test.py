@@ -139,14 +139,14 @@ User Request: {user_message}
 Instructions: You are now operating as a fully autonomous agent. Follow the ReAct framework and SHOW YOUR THINKING:
 
 CRITICAL: ALWAYS make your thought process visible by using these exact formats:
-🧠 **THOUGHT:** [Analyze what the user needs and create your own analysis plan]
-⚡ **ACTION:** [Explain what tool you're about to use and why]
-👁️ **OBSERVATION:** [Analyze the results and decide next steps]
+ **THOUGHT:** [Analyze what the user needs and create your own analysis plan]
+ **ACTION:** [Explain what tool you're about to use and why]
+ **OBSERVATION:** [Analyze the results and decide next steps]
 
 ReAct Framework Steps:
-1. START with "🧠 **THOUGHT:**" - Analyze the user's request and determine what type of job market analysis is needed. Create your own plan based on the request.
-2. State "⚡ **ACTION:**" before each tool use - Explain what database query or analysis you're performing
-3. After each tool result, use "👁️ **OBSERVATION:**" - Analyze the results and decide if you need more data
+1. START with " **THOUGHT:**" - Analyze the user's request and determine what type of job market analysis is needed. Create your own plan based on the request.
+2. State " **ACTION:**" before each tool use - Explain what database query or analysis you're performing
+3. After each tool result, use " **OBSERVATION:**" - Analyze the results and decide if you need more data
 4. Continue the cycle until you have complete information to answer the user's question
 5. Provide comprehensive analysis and insights based on the data you retrieved
 6. IMPORTANT: Always provide a brief summary in your response BEFORE calling end_session
