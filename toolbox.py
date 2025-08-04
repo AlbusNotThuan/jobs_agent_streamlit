@@ -439,7 +439,7 @@ def plot_skill_frequency(skills: Union[str, List[str]]) -> str:
         skills=skills_list,
         timeframe="4w",
         save_path=save_path,
-        show_plot=False
+        show_plot=True
     )
     
     # Just return the path to the saved graph

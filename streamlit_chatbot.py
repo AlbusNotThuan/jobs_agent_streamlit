@@ -1,5 +1,25 @@
 import streamlit as st
+import os
+import sys
 import random
+from datetime import datetime
+from typing import Dict, List, Any
+from google import genai
+from google.genai import types
+import pandas as pd
+from psycopg_query import query_database
+from toolbox import plot_skill_frequency
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Add the current directory to Python path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Import the autonomous agent
+from test import SkillsAnalyzerChatbot
 
 # Cấu hình trang
 st.set_page_config(
@@ -11,222 +31,16 @@ st.set_page_config(
 
 # CSS tùy chỉnh tối ưu cho Streamlit
 def load_css():
-    st.markdown("""
+    """Load CSS from external file for better organization"""
+    # Load external CSS file
+    css_file_path = os.path.join(os.path.dirname(__file__), "static", "styles.css")
+    with open(css_file_path, "r", encoding="utf-8") as f:
+            css_content = f.read()
+        
+    st.markdown(f"""
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Import fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            font-family: 'Inter', sans-serif !important;
-        }
-
-        .stApp {
-            background-color: #f8fafc;
-        }
-
-        /* Material Design Cards - Tương thích Streamlit */
-        .material-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-
-        /* Skill Cards tương thích Streamlit */
-        .skill-card {
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            background: white;
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-
-        .material-button {
-            border-radius: 20px;
-            font-weight: 500;
-            background: #6366f1;
-            color: white;
-            border: none;
-            padding: 0.75rem 2rem;
-            cursor: pointer;
-        }
-
-        /* Gradient Backgrounds đơn giản */
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem;
-            border-radius: 16px;
-        }
-
-        /* Chat Enhancements */
-        .chat-container {
-            height: 400px;
-            overflow-y: auto;
-            border-radius: 16px;
-            background: white;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        .chat-message {
-            margin: 1rem 0;
-            display: flex;
-            align-items: flex-start;
-        }
-
-        .chat-message.user {
-            flex-direction: row-reverse;
-        }
-
-        .chat-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 0.5rem;
-            flex-shrink: 0;
-        }
-
-        .chat-bubble {
-            max-width: 70%;
-            padding: 0.75rem 1rem;
-            border-radius: 16px;
-            word-wrap: break-word;
-        }
-
-        /* Pathway Steps đơn giản */
-        .pathway-step {
-            position: relative;
-            padding-left: 2rem;
-        }
-        
-        .pathway-step::before {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 12px;
-            width: 8px;
-            height: 8px;
-            background: #3b82f6;
-            border-radius: 50%;
-        }
-        
-        .pathway-step::after {
-            content: '';
-            position: absolute;
-            left: 11px;
-            top: 20px;
-            width: 2px;
-            height: calc(100% - 8px);
-            background: #e5e7eb;
-        }
-        
-        .pathway-step:last-child::after {
-            display: none;
-        }
-
-        /* Category Badges đơn giản */
-        .category-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .tech-badge { background: #dbeafe; color: #1e40af; }
-        .design-badge { background: #fce7f3; color: #be185d; }
-        .business-badge { background: #d1fae5; color: #047857; }
-        .data-badge { background: #fef3c7; color: #92400e; }
-
-        .chat-avatar.ai {
-            background: #6366f1;
-            color: white;
-        }
-
-        .chat-avatar.user {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .chat-bubble.ai {
-            background: #f1f5f9;
-            color: #1e293b;
-            border-top-left-radius: 4px;
-        }
-
-        .chat-bubble.user {
-            background: #6366f1;
-            color: white;
-            border-top-right-radius: 4px;
-        }
-
-        .job-tag {
-            background: linear-gradient(45deg, #10b981, #059669);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin: 0.25rem;
-            display: inline-block;
-        }
-
-        .salary-badge {
-            background: linear-gradient(45deg, #f59e0b, #d97706);
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        /* Ẩn header và footer mặc định của Streamlit */
-        header[data-testid="stHeader"] {
-            display: none;
-        }
-        
-        .stDeployButton {
-            display: none;
-        }
-        
-        footer {
-            display: none;
-        }
-        
-        .stMainBlockContainer {
-            padding-top: 0;
-        }
-
-        /* Style cho input chat */
-        .stTextInput > div > div > input {
-            border-radius: 20px;
-            border: 2px solid #e2e8f0;
-            padding: 0.75rem 1rem;
-        }
-
-        .stTextInput > div > div > input:focus {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-
-        /* Style cho button */
-        .stButton > button {
-            border-radius: 20px;
-            background: #6366f1;
-            color: white;
-            border: none;
-            font-weight: 500;
-        }
-
-        .stButton > button:hover {
-            background: #4f46e5;
-        }
+    {css_content}
     </style>
     """, unsafe_allow_html=True)
 
@@ -664,10 +478,10 @@ def render_chat_interface():
                     <i class="fas fa-robot" style="color: white;"></i>
                 </div>
                 <div>
-                    <h3 style="margin: 0; font-weight: 600;">Career AI Assistant</h3>
+                    <h3 style="margin: 0; font-weight: 600;">Autonomous Career AI Agent</h3>
                     <p style="margin: 0; font-size: 0.875rem; opacity: 0.9;">
                         <span style="display: inline-block; width: 8px; height: 8px; background: #6ee7b7; border-radius: 50%; margin-right: 0.5rem;" class="animate-pulse-slow"></span>
-                        Online & Ready to Help
+                        ReAct Framework • Database Analysis • Auto-Visualization
                     </p>
                 </div>
             </div>
@@ -681,67 +495,99 @@ def init_session_state():
         st.session_state.messages = [
             {
                 "role": "assistant",
-                "content": "Hi! I'm your AI career assistant. I can help you with job market insights, salary information, career advice, and skill recommendations. What would you like to know?"
+                "content": "🤖 Hi! I'm your autonomous AI career assistant powered by advanced ReAct framework. I can help you with:\n\n📊 **Database Analysis**: Real-time job market insights and salary data\n📈 **Skill Visualization**: Interactive plots of skill demand trends\n💼 **Career Guidance**: Personalized recommendations based on current market data\n🎯 **Autonomous Research**: I'll automatically query databases and create visualizations without asking for permission\n\nWhat would you like to explore in the job market today?"
             }
         ]
+    
+    # Initialize image storage for generated plots
+    if 'last_generated_image' not in st.session_state:
+        st.session_state.last_generated_image = None
+    
+    # Initialize the autonomous agent if not already done
+    if 'chatbot' not in st.session_state:
+        st.session_state.chatbot = SkillsAnalyzerChatbot()
+        # Configure for web interface
+        st.session_state.chatbot.verbose_mode = False  # Disable verbose for cleaner web UI
+        st.session_state.chatbot.thought_process_enabled = False  # Disable thought process display for web
+        st.session_state.chatbot.max_autonomous_cycles = 5  # Reduce cycles for web environment
 
-# Hiển thị tin nhắn chat
+# Hiển thị tin nhắn chat với Streamlit components
 def display_chat_messages():
-    for message in st.session_state.messages:
+    """Display chat messages using proper Streamlit components with image support"""
+    for i, message in enumerate(st.session_state.messages):
         if message["role"] == "assistant":
-            st.markdown(f"""
-            <div class="chat-message">
-                <div class="chat-avatar ai">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="chat-bubble ai">
-                    {message["content"]}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            # AI Message
+            with st.chat_message("assistant", avatar="🤖"):
+                st.markdown(message["content"])
+                
+                # Check if there are any images to display from the autonomous agent
+                if hasattr(st.session_state, 'last_generated_image') and st.session_state.last_generated_image:
+                    st.image(st.session_state.last_generated_image, caption="Generated Visualization", use_column_width=True)
+                    # Clear the image after displaying to avoid duplication
+                    st.session_state.last_generated_image = None
         else:
-            st.markdown(f"""
-            <div class="chat-message user">
-                <div class="chat-avatar user">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div class="chat-bubble user">
-                    {message["content"]}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            # User Message
+            with st.chat_message("user", avatar="👤"):
+                st.markdown(message["content"])
 
-# Hàm xử lý phản hồi AI đơn giản
+# Hàm xử lý phản hồi AI sử dụng autonomous agent
 def get_ai_response(user_input):
-    # Danh sách phản hồi mẫu
-    responses = [
-        "That's a great question! Based on current market trends, I can provide you with some insights.",
-        "The job market is quite dynamic right now. Let me help you with that information.",
-        "I understand your concern. Here's what I can tell you about that topic.",
-        "That's an excellent career question! I'm here to help guide you.",
-        "Based on my analysis of the current job market, here's what you should know."
-    ]
-    
-    # Phản hồi cụ thể dựa trên từ khóa
-    user_input_lower = user_input.lower()
-    
-    if any(word in user_input_lower for word in ['salary', 'pay', 'money', 'income']):
-        return f"💰 Salary information is crucial for career planning! For the role you're interested in, salaries typically range from $60K-$150K depending on experience and location. Would you like specific data for your area?"
-    
-    elif any(word in user_input_lower for word in ['frontend', 'react', 'javascript', 'web development']):
-        return f"🚀 Frontend development is booming! React and TypeScript skills are in high demand. Average salaries range from $80K-$150K. Remote opportunities have increased by 40% this year. What specific frontend skills are you looking to develop?"
-    
-    elif any(word in user_input_lower for word in ['skill', 'learn', 'training', 'course']):
-        return f"📚 Continuous learning is key! The most in-demand skills right now include: AI/ML, Cloud Computing, Data Analysis, and Cybersecurity. Which area interests you most?"
-    
-    elif any(word in user_input_lower for word in ['remote', 'work from home', 'wfh']):
-        return f"🏠 Remote work opportunities have grown significantly! About 60% of tech jobs now offer remote options. This has opened up global opportunities for skilled professionals."
-    
-    elif any(word in user_input_lower for word in ['resume', 'cv', 'application']):
-        return f"📄 A strong resume is essential! Key tips: highlight relevant skills, quantify achievements, tailor for each role, and keep it concise. Would you like me to review specific sections?"
-    
-    else:
-        return random.choice(responses) + f" Regarding '{user_input}', I'd be happy to provide more specific guidance. Could you tell me more about what you're looking for?"
+    """Get response from the autonomous SkillsAnalyzerChatbot agent"""
+    try:
+        # Use the autonomous agent from session state
+        chatbot = st.session_state.chatbot
+        
+        # Reset any previous stored messages
+        chatbot.last_print_message = None
+        
+        # Get response from autonomous agent
+        response = chatbot.chat(user_input)
+        
+        # Check if any visualizations were generated
+        import matplotlib.pyplot as plt
+        import os
+        
+        # Look for any newly generated plot files
+        plot_files = []
+        for file in os.listdir('.'):
+            if file.endswith(('.png', '.jpg', '.jpeg', '.svg')) and 'skill' in file.lower():
+                plot_files.append(file)
+        
+        # If plots were generated, store the most recent one
+        if plot_files:
+            # Sort by modification time and get the most recent
+            latest_plot = max(plot_files, key=os.path.getmtime)
+            st.session_state.last_generated_image = latest_plot
+        
+        # Combine agent response with any captured output
+        final_response = ""
+        
+        # Add the main response if available
+        if response and response.strip():
+            final_response += response.strip()
+        
+        # Add any captured agent analysis from print_message
+        if chatbot.last_print_message:
+            if final_response:
+                final_response += "\n\n---\n\n"
+            final_response += f"📋 **Agent Analysis:** {chatbot.last_print_message}"
+        
+        # If plots were generated, mention them
+        if plot_files:
+            if final_response:
+                final_response += "\n\n"
+            final_response += f"📊 **Generated Visualization:** I've created a visualization based on your request. You can see it displayed above."
+        
+        # If no response, provide a default message
+        if not final_response:
+            final_response = "🤖 I've processed your request using my autonomous analysis tools. The results should be displayed above, including any generated visualizations."
+        
+        return final_response
+        
+    except Exception as e:
+        error_msg = f"❌ **Autonomous Agent Error:** {str(e)}\n\nThe agent encountered an issue while processing your request. Please try rephrasing your question or ask about job market trends, skills analysis, or career insights."
+        print(f"Streamlit AI Response Error: {e}")  # For debugging
+        return error_msg
 
 # Main app với enhanced features từ genai.html
 def main():
@@ -755,10 +601,12 @@ def main():
     st.markdown("""
     <div class="gradient-bg" style="text-align: center; margin-bottom: 3rem;">
         <h2 style="margin: 0; font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Discover Your Future Skills</h2>
-        <p style="margin: 0; font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem;">Chat with our AI to explore career paths and build the skills you need for tomorrow's jobs</p>
-        <button class="material-button" style="font-size: 1.125rem; padding: 1rem 2rem;">
-            <i class="fas fa-comments" style="margin-right: 0.5rem;"></i>Start Career Chat
-        </button>
+        <p style="margin: 0; font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem;">Chat with our autonomous AI agent that automatically analyzes job market data, creates visualizations, and provides insights using advanced ReAct framework</p>
+        <a href="#chat-section" style="display: inline-block; text-decoration: none;">
+            <button class="material-button" style="font-size: 1.125rem; padding: 1rem 2rem; cursor: pointer;" onclick="document.getElementById('chat-section').scrollIntoView({behavior: 'smooth'});">
+                <i class="fas fa-comments" style="margin-right: 0.5rem;"></i>Start Career Chat
+            </button>
+        </a>
     </div>
     """, unsafe_allow_html=True)
     
@@ -776,57 +624,182 @@ def main():
     
     # Chat Interface Section
     st.markdown("---")
-    st.markdown("### 💬 Chat with Career AI")
+    st.markdown('<div id="chat-section"></div>', unsafe_allow_html=True)
     
-    col1, col2 = st.columns([1, 1])
+    # Chat Interface Header
+    st.markdown("""
+    <div style="text-align: center; margin: 2rem 0;">
+        <h2 style="margin: 0; font-size: 2rem; font-weight: 700; color: #1e293b;">💬 Chat with Your Autonomous AI Agent</h2>
+        <p style="margin: 0.5rem 0 0 0; color: #6b7280;">Real-time database analysis • Automatic visualizations • Career insights</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    with col1:
-        # Chat interface
-        render_chat_interface()
+    # Create highlighted container for chat section
+    st.markdown('<div class="chat-section-highlight">', unsafe_allow_html=True)
+    
+    # Chat Interface Card
+    st.markdown("""
+    <div class="ai-header-card">
+        <div class="header-content">
+            <div class="icon-container">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="text-container">
+                <h3>Career AI Agent</h3>
+                <p>
+                    <span class="status-dot"></span>
+                    Ready to analyze the job market...
+                </p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Chat Messages Container with fixed height and proper styling
+    st.markdown("### 💭 Conversation")
+    
+    # Create a chat container with margins
+    st.markdown("""
+    <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    """, unsafe_allow_html=True)
+    
+    # Display chat messages in a scrollable container
+    chat_container = st.container(height=400)
+    with chat_container:
+        display_chat_messages()
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Chat Input Section - centered with max width
+    st.markdown("""
+    <div style="max-width: 800px; margin: 2rem auto;">
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 💬 Ask Your Question")
+    
+    # Chat input form
+    with st.form(key="chat_form", clear_on_submit=True):
+        user_input = st.text_area(
+            "Type your message here...", 
+            placeholder="Ask about skills, careers, salaries, job market trends, or request visualizations...",
+            height=120,
+            label_visibility="collapsed"
+        )
         
-        # Chat container
-        chat_container = st.container()
-        with chat_container:
-            st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-            display_chat_messages()
-            st.markdown('</div>', unsafe_allow_html=True)
+        col_btn1, col_btn2 = st.columns([3, 1])
+        with col_btn1:
+            send_button = st.form_submit_button("🚀 Send Message", use_container_width=True, type="primary")
+        with col_btn2:
+            clear_button = st.form_submit_button("🗑️ Clear", use_container_width=True)
     
-    with col2:
-        # Chat input
-        with st.form(key="chat_form", clear_on_submit=True):
-            user_input = st.text_area(
-                "Message", 
-                placeholder="Ask about skills, careers, salaries, or job market trends...",
-                height=100,
-                label_visibility="collapsed"
-            )
-            send_button = st.form_submit_button("Send Message", use_container_width=True)
+    # Handle form submissions
+    if send_button and user_input:
+        # Add user message
+        st.session_state.messages.append({
+            "role": "user", 
+            "content": user_input
+        })
         
-        if send_button and user_input:
-            # Thêm tin nhắn của user
-            st.session_state.messages.append({
-                "role": "user", 
-                "content": user_input
-            })
-            
-            # Tạo phản hồi AI
+        # Get AI response
+        with st.spinner("🤖 AI Agent is analyzing and querying database..."):
             ai_response = get_ai_response(user_input)
             st.session_state.messages.append({
                 "role": "assistant", 
                 "content": ai_response
             })
-            
-            # Rerun để cập nhật chat
-            st.rerun()
         
-        # Quick suggestions
-        st.markdown("#### Quick Questions:")
+        # Refresh to show new messages
+        st.rerun()
+    
+    if clear_button:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": "🤖 Hi! I'm your autonomous AI career assistant. I can analyze job market data, create visualizations, and provide career insights. What would you like to explore?"
+            }
+        ]
+        # Clear any stored images
+        st.session_state.last_generated_image = None
+        st.rerun()
+    
+    # Quick Suggestions Section - below the input
+    st.markdown("#### 🚀 Quick Suggestions")
+    suggestions = [
+        "📊 What are the most in-demand skills right now?",
+        "📈 Plot Python vs JavaScript demand trends",
+        "💰 Show me salary ranges for data science roles",
+        "🎯 Analyze AI/ML job market trends",
+        "📊 Compare frontend framework popularity",
+        "🔍 Find the hottest skills in cybersecurity",
+        "📋 What skills should I learn for remote work?",
+        "💼 Visualize React job opportunities over time"
+    ]
+    
+    # Display suggestions in a grid
+    cols = st.columns(2)
+    for i, suggestion in enumerate(suggestions):
+        with cols[i % 2]:
+            if st.button(suggestion, key=f"suggestion_{i}", use_container_width=True):
+                st.session_state.messages.append({
+                    "role": "user", 
+                    "content": suggestion
+                })
+                ai_response = get_ai_response(suggestion)
+                st.session_state.messages.append({
+                    "role": "assistant", 
+                    "content": ai_response
+                })
+                st.rerun()
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Display Generated Visualizations Section
+    st.markdown("---")
+    st.markdown("### 📊 Generated Visualizations")
+    
+    # Check for any generated plot files
+    import os
+    plot_files = []
+    for file in os.listdir('.'):
+        if file.endswith(('.png', '.jpg', '.jpeg', '.svg')) and any(keyword in file.lower() for keyword in ['skill', 'plot', 'chart', 'graph']):
+            plot_files.append(file)
+    
+    if plot_files:
+        # Sort by modification time and display the most recent ones
+        plot_files.sort(key=os.path.getmtime, reverse=True)
+        
+        # Display up to 3 most recent plots
+        cols = st.columns(min(len(plot_files[:3]), 3))
+        for i, plot_file in enumerate(plot_files[:3]):
+            with cols[i]:
+                try:
+                    st.image(plot_file, caption=f"Generated: {plot_file}", use_column_width=True)
+                    
+                    # Add download button
+                    with open(plot_file, "rb") as file:
+                        st.download_button(
+                            label=f"📥 Download {plot_file}",
+                            data=file.read(),
+                            file_name=plot_file,
+                            mime="image/png",
+                            key=f"download_{plot_file}_{i}"
+                        )
+                except Exception as e:
+                    st.error(f"Error displaying {plot_file}: {str(e)}")
+    else:
+        st.info("📊 No visualizations generated yet. Ask the AI agent to create charts or analyze data to see visualizations here!")
+        st.markdown("#### 🚀 Try These Autonomous Queries:")
         suggestions = [
-            "💼 What skills should I learn for data science?",
-            "📊 Show me salary trends in tech",
-            "🎯 Help me optimize my resume",
-            "🚀 Best career paths for beginners?",
-            "🏠 How to find remote work opportunities?"
+            "� What are the most in-demand skills right now?",
+            "📈 Plot Python vs JavaScript demand trends",
+            "� Show me salary ranges for data science roles",
+            "🎯 Analyze AI/ML job market trends",
+            "� Compare frontend framework popularity",
+            "🔍 Find the hottest skills in cybersecurity",
+            "📋 What skills should I learn for remote work?",
+            "💼 Visualize React job opportunities over time"
         ]
         
         for suggestion in suggestions:
@@ -842,26 +815,37 @@ def main():
                 })
                 st.rerun()
         
-        # Market Insights Widget
+        # Real-time Market Insights Widget
         st.markdown("""
         <div class="material-card" style="margin-top: 1.5rem;">
-            <h4 style="margin: 0 0 1rem 0; font-weight: 600; color: #1e293b;">📈 Market Pulse</h4>
+            <h4 style="margin: 0 0 1rem 0; font-weight: 600; color: #1e293b;">📈 Live Market Data</h4>
+            <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 1rem;">Powered by autonomous database analysis</p>
             <div style="font-size: 0.875rem; color: #374151;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Tech Jobs</span>
-                    <span style="color: #10b981; font-weight: 500;">↗ +12%</span>
+                    <span>🤖 AI/ML Skills</span>
+                    <span style="color: #10b981; font-weight: 500;">↗ Hot Trend</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Remote Work</span>
-                    <span style="color: #10b981; font-weight: 500;">↗ +8%</span>
+                    <span>🐍 Python Jobs</span>
+                    <span style="color: #10b981; font-weight: 500;">↗ High Demand</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>🏠 Remote Work</span>
+                    <span style="color: #3b82f6; font-weight: 500;">→ Stable</span>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
-                    <span>AI/ML Roles</span>
-                    <span style="color: #10b981; font-weight: 500;">↗ +25%</span>
+                    <span>🔐 Cybersecurity</span>
+                    <span style="color: #10b981; font-weight: 500;">↗ Growing</span>
                 </div>
+            </div>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                <p style="font-size: 0.75rem; color: #6b7280; margin: 0;">💡 Ask the AI agent for detailed analysis and visualizations!</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+    # Close the chat section highlight container
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
