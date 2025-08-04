@@ -31,276 +31,16 @@ st.set_page_config(
 
 # CSS tùy chỉnh tối ưu cho Streamlit
 def load_css():
-    st.markdown("""
-    <link href="https://cdnjs.cloudflare.co        # Quick suggestions
-        st.markdown("#### 🚀 Try These Autonomous Queries:")
-        suggestions = [
-            "📊 What are the most in-demand skills right now?",
-            "📈 Plot Python vs JavaScript demand trends",
-            "💰 Show me salary ranges for data science roles",
-            "🎯 Analyze AI/ML job market trends",
-            "📊 Compare frontend framework popularity",
-            "🔍 Find the hottest skills in cybersecurity",
-            "📋 What skills should I learn for remote work?",
-            "💼 Visualize React job opportunities over time"
-        ]font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    """Load CSS from external file for better organization"""
+    # Load external CSS file
+    css_file_path = os.path.join(os.path.dirname(__file__), "static", "styles.css")
+    with open(css_file_path, "r", encoding="utf-8") as f:
+            css_content = f.read()
+        
+    st.markdown(f"""
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Import fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            font-family: 'Inter', sans-serif !important;
-        }
-
-        .stApp {
-            background-color: #f8fafc;
-        }
-
-        /* Material Design Cards - Tương thích Streamlit */
-        .material-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-
-        /* Skill Cards tương thích Streamlit */
-        .skill-card {
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            background: white;
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-
-        .material-button {
-            border-radius: 20px;
-            font-weight: 500;
-            background: #6366f1;
-            color: white;
-            border: none;
-            padding: 0.75rem 2rem;
-            cursor: pointer;
-        }
-
-        /* Gradient Backgrounds đơn giản */
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem;
-            border-radius: 16px;
-        }
-
-        /* Chat Enhancements */
-        .chat-container {
-            height: 400px;
-            overflow-y: auto;
-            border-radius: 16px;
-            background: white;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        .chat-message {
-            margin: 1rem 0;
-            display: flex;
-            align-items: flex-start;
-        }
-
-        .chat-message.user {
-            flex-direction: row-reverse;
-        }
-
-        .chat-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 0.5rem;
-            flex-shrink: 0;
-        }
-
-        .chat-bubble {
-            max-width: 70%;
-            padding: 0.75rem 1rem;
-            border-radius: 16px;
-            word-wrap: break-word;
-        }
-
-        /* Pathway Steps đơn giản */
-        .pathway-step {
-            position: relative;
-            padding-left: 2rem;
-        }
-        
-        .pathway-step::before {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 12px;
-            width: 8px;
-            height: 8px;
-            background: #3b82f6;
-            border-radius: 50%;
-        }
-        
-        .pathway-step::after {
-            content: '';
-            position: absolute;
-            left: 11px;
-            top: 20px;
-            width: 2px;
-            height: calc(100% - 8px);
-            background: #e5e7eb;
-        }
-        
-        .pathway-step:last-child::after {
-            display: none;
-        }
-
-        /* Category Badges đơn giản */
-        .category-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .tech-badge { background: #dbeafe; color: #1e40af; }
-        .design-badge { background: #fce7f3; color: #be185d; }
-        .business-badge { background: #d1fae5; color: #047857; }
-        .data-badge { background: #fef3c7; color: #92400e; }
-
-        .chat-avatar.ai {
-            background: #6366f1;
-            color: white;
-        }
-
-        .chat-avatar.user {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .chat-bubble.ai {
-            background: #f1f5f9;
-            color: #1e293b;
-            border-top-left-radius: 4px;
-        }
-
-        .chat-bubble.user {
-            background: #6366f1;
-            color: white;
-            border-top-right-radius: 4px;
-        }
-
-        .job-tag {
-            background: linear-gradient(45deg, #10b981, #059669);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin: 0.25rem;
-            display: inline-block;
-        }
-
-        .salary-badge {
-            background: linear-gradient(45deg, #f59e0b, #d97706);
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        /* Ẩn header và footer mặc định của Streamlit */
-        header[data-testid="stHeader"] {
-            display: none;
-        }
-        
-        .stDeployButton {
-            display: none;
-        }
-        
-        footer {
-            display: none;
-        }
-        
-        .stMainBlockContainer {
-            padding-top: 0;
-        }
-
-        /* Style cho input chat */
-        .stTextInput > div > div > input {
-            border-radius: 20px;
-            border: 2px solid #e2e8f0;
-            padding: 0.75rem 1rem;
-        }
-
-        .stTextInput > div > div > input:focus {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-
-        /* Style cho button */
-        .stButton > button {
-            border-radius: 20px;
-            background: #6366f1;
-            color: white;
-            border: none;
-            font-weight: 500;
-        }
-
-        .stButton > button:hover {
-            background: #4f46e5;
-        }
-
-        /* Smooth scrolling for anchor links */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Highlight chat section when accessed via button */
-        #chat-section {
-            scroll-margin-top: 2rem;
-        }
-
-        /* Enhanced chat section styling */
-        .chat-section-highlight {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(168, 85, 247, 0.05));
-            border-radius: 20px;
-            padding: 2rem;
-            margin: 1rem 0;
-            border: 2px solid rgba(99, 102, 241, 0.1);
-        }
-
-        /* Chat message styling fixes */
-        .stChatMessage {
-            color: #1e293b !important;
-        }
-        
-        .stChatMessage p {
-            color: #1e293b !important;
-        }
-        
-        .stChatMessage div {
-            color: #1e293b !important;
-        }
-        
-        /* Ensure all text in chat is dark */
-        [data-testid="chatAvatarIcon-assistant"] + div,
-        [data-testid="chatAvatarIcon-user"] + div {
-            color: #1e293b !important;
-        }
-        
-        /* Fix for markdown in chat messages */
-        [data-testid="stChatMessageContent"] * {
-            color: #1e293b !important;
-        }
+    {css_content}
     </style>
     """, unsafe_allow_html=True)
 
@@ -899,16 +639,16 @@ def main():
     
     # Chat Interface Card
     st.markdown("""
-    <div style="background: white; border-radius: 20px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-robot" style="color: white; font-size: 1.25rem;"></i>
+    <div class="ai-header-card">
+        <div class="header-content">
+            <div class="icon-container">
+                <i class="fas fa-robot"></i>
             </div>
-            <div>
-                <h3 style="margin: 0; font-weight: 600; color: #1e293b;">Autonomous Career AI Agent</h3>
-                <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">
-                    <span style="display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 0.5rem;"></span>
-                    Online • ReAct Framework • Database Analysis • Auto-Visualization
+            <div class="text-container">
+                <h3>Career AI Agent</h3>
+                <p>
+                    <span class="status-dot"></span>
+                    Ready to analyze the job market...
                 </p>
             </div>
         </div>
