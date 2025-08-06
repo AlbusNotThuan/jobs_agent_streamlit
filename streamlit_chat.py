@@ -26,16 +26,6 @@ from google.genai import types
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     from chatbot_class import SkillsAnalyzerChatbot
-    from chart_tools import (
-        create_bar_chart,
-        create_line_chart,
-        create_pie_chart,
-        create_heatmap,
-        create_histogram,
-        create_scatter_plot,
-        create_multi_line_chart
-    )
-    from tools.psycopg_query import query_database
 except ImportError as e:
     st.error(f"⚠️ Import error: {e}")
     st.error("Make sure all required files are in the same directory")
