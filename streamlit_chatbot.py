@@ -2,13 +2,17 @@ import streamlit as st
 import os
 import sys
 import random
+import re
+import json
+import tempfile
 from datetime import datetime
 from typing import Dict, List, Any
+from io import BytesIO
 from google import genai
 from google.genai import types
 import pandas as pd
-from psycopg_query import query_database
-from toolbox import plot_skill_frequency
+from tools.psycopg_query import query_database
+from tools.toolbox import plot_skill_frequency
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -19,7 +23,14 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import the autonomous agent
-from test import SkillsAnalyzerChatbot
+try:
+    from chatbot_class import SkillsAnalyzerChatbot
+except ImportError:
+    try:
+        from chatbot_class.skills_analyzer_chatbot import SkillsAnalyzerChatbot
+    except ImportError:
+        st.error("❌ Could not import SkillsAnalyzerChatbot. Please check the imports.")
+        st.stop()
 
 # Cấu hình trang
 st.set_page_config(
@@ -34,8 +45,71 @@ def load_css():
     """Load CSS from external file for better organization"""
     # Load external CSS file
     css_file_path = os.path.join(os.path.dirname(__file__), "static", "styles.css")
-    with open(css_file_path, "r", encoding="utf-8") as f:
+    
+    # Default CSS if file doesn't exist
+    default_css = """
+    .material-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1.5rem;
+    }
+    
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+    }
+    
+    .material-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .material-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .skill-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+    
+    .skill-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    """
+    
+    try:
+        with open(css_file_path, "r", encoding="utf-8") as f:
             css_content = f.read()
+    except FileNotFoundError:
+        css_content = default_css
         
     st.markdown(f"""
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -468,125 +542,417 @@ def render_career_insights():
     </section>
     """)
 
-# Chat component
+# Chat component with compact settings
 def render_chat_interface():
+    # Chat Interface Header
     st.markdown("""
-    <div class="material-card">
-        <div class="gradient-bg">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-robot" style="color: white;"></i>
-                </div>
-                <div>
-                    <h3 style="margin: 0; font-weight: 600;">Autonomous Career AI Agent</h3>
-                    <p style="margin: 0; font-size: 0.875rem; opacity: 0.9;">
-                        <span style="display: inline-block; width: 8px; height: 8px; background: #6ee7b7; border-radius: 50%; margin-right: 0.5rem;" class="animate-pulse-slow"></span>
-                        ReAct Framework • Database Analysis • Auto-Visualization
-                    </p>
-                </div>
+    <div style="text-align: center; margin: 2rem 0;">
+        <h2 style="margin: 0; font-size: 2rem; font-weight: 700; color: #1e293b;">💬 Chat with Your AI Skills Analyzer</h2>
+        <p style="margin: 0.5rem 0 0 0; color: #6b7280;">Real-time database analysis • Automatic visualizations • Career insights</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Compact Settings Section
+    with st.expander("⚙️ Chat Settings", expanded=False):
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            debug_mode = st.checkbox(
+                "🔍 Debug Mode",
+                value=st.session_state.get('show_debug_info', False),
+                help="Show AI thinking process"
+            )
+            if debug_mode != st.session_state.get('show_debug_info', False):
+                st.session_state.chatbot.set_debug_mode(debug_mode)
+        
+        with col2:
+            if st.button("🔄 New Chat", help="Start fresh conversation", key="new_chat_btn"):
+                st.session_state.chatbot.new_chat()
+                st.rerun()
+        
+        with col3:
+            # Show session stats as text instead of button
+            stats = st.session_state.chatbot.get_session_stats()
+            st.metric("💬 Messages", stats.get('total_messages', 0))
+
+    # Chat Status Indicator
+    st.markdown("""
+    <div class="material-card" style="margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-robot" style="color: white;"></i>
+            </div>
+            <div>
+                <h4 style="margin: 0; font-weight: 600; color: #1e293b;">AI Skills Analyzer</h4>
+                <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">
+                    <span style="display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 0.5rem;" class="animate-pulse"></span>
+                    Ready to analyze job market data
+                </p>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Chat Messages Container with increased height
+    st.markdown("### 💭 Conversation")
+    chat_container = st.container(height=600)  # Increased from 400 to 600
+    with chat_container:
+        display_chat_messages()
+    
+    # Chat Input Section
+    st.markdown("### 💬 Ask Your Question")
+    
+    # Chat input with form
+    with st.form(key="chat_form", clear_on_submit=True):
+        user_input = st.text_area(
+            "Type your message here...", 
+            placeholder="Ask about skills, careers, salaries, job market trends, or request visualizations...",
+            height=100,
+            label_visibility="collapsed"
+        )
+        
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            send_button = st.form_submit_button("🚀 Send Message", use_container_width=True, type="primary")
+        with col2:
+            clear_button = st.form_submit_button("🗑️ Clear", use_container_width=True)
+    
+    # Handle form submissions
+    if send_button and user_input:
+        # Add user message to conversation history first
+        st.session_state.conversation_history.append(f"User: {user_input}")
+        
+        # Process and get AI response
+        with st.spinner("🤔 Analyzing your request..."):
+            response = st.session_state.chatbot.chat(user_input)
+            if response and response.strip():
+                # Don't add again since chatbot.chat() already adds to history
+                pass
+            else:
+                st.session_state.conversation_history.append("Assistant: I'm sorry, I couldn't generate a response. Please try again.")
+        
+        st.rerun()
+    
+    if clear_button:
+        # Clear button only clears the input form, not conversation
+        st.rerun()
+    
+    # Quick Suggestions
+    st.markdown("#### 🚀 Quick Suggestions")
+    suggestions = [
+        "📊 What are the most in-demand skills?",
+        "📈 Show Python vs JavaScript trends",
+        "💰 Data science salary ranges",
+        "🎯 AI/ML job market analysis",
+        "📊 Frontend framework popularity",
+        "🔍 Cybersecurity skills demand",
+        "📋 Remote work skill requirements",
+        "💼 React job opportunities"
+    ]
+    
+    # Display suggestions in grid
+    cols = st.columns(2)
+    for i, suggestion in enumerate(suggestions):
+        with cols[i % 2]:
+                if st.button(suggestion, key=f"suggestion_{i}", use_container_width=True):
+                    # Add user message to conversation history first
+                    st.session_state.conversation_history.append(f"User: {suggestion}")
+                    
+                    # Process and get AI response
+                    with st.spinner("🤔 Analyzing your request..."):
+                        response = st.session_state.chatbot.chat(suggestion)
+                        if not (response and response.strip()):
+                            st.session_state.conversation_history.append("Assistant: I'm sorry, I couldn't generate a response. Please try again.")
+                    
+                    st.rerun()# Enhanced Streamlit Skills Analyzer Chatbot Class  
+class StreamlitSkillsAnalyzerChatbot:
+    def __init__(self):
+        if not API_KEY:
+            st.error("❌ GEMINI_API_KEY not found in environment variables")
+            st.stop()
+        
+        # Initialize the main chatbot class with verbose mode for detailed output
+        self.chatbot = SkillsAnalyzerChatbot(verbose=True)
+        
+        # Initialize session state
+        if 'conversation_history' not in st.session_state:
+            st.session_state.conversation_history = []
+        if 'session_active' not in st.session_state:
+            st.session_state.session_active = True
+        if 'show_debug_info' not in st.session_state:
+            st.session_state.show_debug_info = True
+
+    def display_message(self, message: str) -> None:
+        """
+        Displays a message in Streamlit chat interface.
+        """
+        st.chat_message("assistant").write(message)
+
+    def end_session(self) -> None:
+        """
+        Ends the chatbot session by setting session_active to False.
+        """
+        st.session_state.session_active = False
+        st.chat_message("assistant").write("👋 Session ended. Refresh the page to start a new conversation!")
+
+    def chat(self, user_message: str) -> str:
+        """
+        Main chat function using the SkillsAnalyzerChatbot class with detailed UI.
+        """
+        try:
+            # Don't add user message here since it's already added in the UI handler
+            # Process the chat request
+            response = self.chatbot.chat(user_message)
+            
+            # Add assistant response to conversation history
+            st.session_state.conversation_history.append(f"Assistant: {response}")
+            
+            return self._clean_response_from_debug(response)
+            
+        except Exception as e:
+            error_msg = f"❌ Error processing request: {str(e)}"
+            st.error(error_msg)
+            st.session_state.conversation_history.append(f"Assistant: {error_msg}")
+            return error_msg
+    
+    def _clean_response_from_debug(self, response: str) -> str:
+        """
+        Remove debug information from response to get clean user-facing content.
+        """
+        if not response:
+            return "I'm sorry, I couldn't generate a response. Please try again."
+            
+        lines = response.split('\n')
+        clean_lines = []
+        skip_line = False
+        
+        for line in lines:
+            # Skip debug patterns
+            if any(pattern in line for pattern in ['🧠 **THINKING:', '🔧 **TOOL', '📊 **TOOL', 
+                                                  '[Gemini Part Fields]', '💬 **RESPONSE:', '-' * 20]):
+                skip_line = True
+                continue
+            
+            if not skip_line and line.strip():
+                clean_lines.append(line)
+        
+        # Join and clean up extra whitespace
+        clean_response = '\n'.join(clean_lines).strip()
+        
+        # Remove any remaining debug patterns
+        clean_response = re.sub(r'🧠 \*\*ANALYSIS:\*\*.*?(?=\n\n|\Z)', '', clean_response, flags=re.DOTALL)
+        clean_response = re.sub(r'🧠 \*\*PLAN:\*\*.*?(?=\n\n|\Z)', '', clean_response, flags=re.DOTALL)
+        
+        return clean_response.strip()
+    
+    def _display_debug_output(self, debug_output: str) -> None:
+        """
+        Display debug output in a structured way for Streamlit.
+        """
+        lines = debug_output.strip().split('\n')
+        
+        for line in lines:
+            if line.strip().startswith('🧠'):
+                st.info(line)
+            elif line.strip().startswith('🔧'):
+                st.warning(line)
+            elif line.strip().startswith('📊'):
+                st.success(line)
+            else:
+                st.text(line)
+    
+    def set_debug_mode(self, enabled: bool) -> None:
+        """Toggle debug information display"""
+        st.session_state.show_debug_info = enabled
+        if hasattr(self.chatbot, 'set_verbose_mode'):
+            self.chatbot.set_verbose_mode(enabled)
+        else:
+            self.chatbot.verbose = enabled
+    
+    def new_chat(self) -> None:
+        """Start a new chat session"""
+        if hasattr(self.chatbot, 'new_chat'):
+            self.chatbot.new_chat()
+        elif hasattr(self.chatbot, 'reset_conversation'):
+            self.chatbot.reset_conversation()
+        else:
+            # Reinitialize chatbot if reset method doesn't exist
+            self.chatbot = SkillsAnalyzerChatbot(verbose=True)
+        st.session_state.conversation_history = []
+        st.session_state.session_active = True
+    
+    def get_session_stats(self) -> dict:
+        """Get current session statistics"""
+        if hasattr(self.chatbot, 'get_session_stats'):
+            return self.chatbot.get_session_stats()
+        else:
+            return {
+                'total_messages': len(st.session_state.conversation_history),
+                'session_active': st.session_state.session_active
+            }
+    
+    def set_thinking_budget(self, budget: int) -> None:
+        """Set thinking budget for the chatbot"""
+        if hasattr(self.chatbot, 'set_thinking_budget'):
+            self.chatbot.set_thinking_budget(budget)
+    
+    def set_generation_preset(self, preset: str) -> None:
+        """Set generation preset for the chatbot"""
+        if hasattr(self.chatbot, 'set_generation_preset'):
+            self.chatbot.set_generation_preset(preset)
+    
+    def display_conversation_with_debug(self) -> None:
+        """Display conversation history with enhanced formatting"""
+        for i, message in enumerate(st.session_state.conversation_history):
+            if message.startswith("User: "):
+                # User message with right alignment
+                user_text = message[6:]  # Remove "User: " prefix
+                st.markdown(f"""
+                <div style="display: flex; justify-content: flex-end; margin: 1rem 0;">
+                    <div style="background: #e3f2fd; padding: 0.75rem 1rem; border-radius: 18px 18px 4px 18px; max-width: 70%; color: #1565c0;">
+                        <strong>You:</strong><br>{user_text}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            elif message.startswith("Assistant: "):
+                # Assistant message with left alignment
+                response_text = message[11:]  # Remove "Assistant: " prefix
+                st.markdown(f"""
+                <div style="display: flex; justify-content: flex-start; margin: 1rem 0;">
+                    <div style="background: #f5f5f5; padding: 0.75rem 1rem; border-radius: 18px 18px 18px 4px; max-width: 85%; color: #333;">
+                        <strong>🤖 AI Assistant:</strong><br>
+                """, unsafe_allow_html=True)
+                
+                if st.session_state.show_debug_info:
+                    self._display_structured_response(response_text)
+                else:
+                    # Filter out debug info for clean display
+                    clean_response = self._clean_response_from_debug(response_text)
+                    st.markdown(clean_response)
+                
+                st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    def _display_structured_response(self, response_text: str) -> None:
+        """Display structured response with different sections"""
+        # First display the main response
+        clean_response = self._clean_response_from_debug(response_text)
+        if clean_response.strip():
+            st.markdown(clean_response)
+        
+        # Then display debug sections in expandable format
+        lines = response_text.split('\n')
+        thinking_content = []
+        tool_content = []
+        result_content = []
+        current_section = None
+        
+        for line in lines:
+            line = line.strip()
+            
+            if 'THINKING:' in line or '🧠' in line:
+                current_section = "thinking"
+                continue
+            elif 'TOOL' in line and ('🔧' in line or '📊' in line):
+                current_section = "tool" if '🔧' in line else "result"
+                continue
+            elif line and current_section == "thinking":
+                thinking_content.append(line)
+            elif line and current_section == "tool":
+                tool_content.append(line)
+            elif line and current_section == "result":
+                result_content.append(line)
+        
+        # Render sections with proper expandable format
+        if thinking_content:
+            with st.expander("🧠 View AI Thinking Process", expanded=False):
+                for line in thinking_content:
+                    if line.strip():
+                        st.text(line)
+        
+        if tool_content:
+            with st.expander("🔧 View Tool Usage", expanded=False):
+                for line in tool_content:
+                    if line.strip():
+                        st.code(line)
+        
+        if result_content:
+            with st.expander("📊 View Tool Results", expanded=False):
+                for line in result_content:
+                    if line.strip():
+                        if line.startswith('{') or line.startswith('['):
+                            try:
+                                import json
+                                st.json(json.loads(line))
+                            except:
+                                st.text(line)
+                        else:
+                            st.text(line)
+    
+    def _render_section(self, section_type: str, content: list) -> None:
+        """Render a specific section with appropriate styling"""
+        import time
+        unique_key = f"{section_type}_{int(time.time() * 1000000)}"
+        
+        if section_type == "thinking":
+            with st.expander("🧠 **Thinking Process**", expanded=False, key=f"thinking_{unique_key}"):
+                for line in content:
+                    st.text(line)
+        elif section_type == "tool":
+            with st.expander("🔧 **Tool Usage**", expanded=False, key=f"tool_{unique_key}"):
+                for line in content:
+                    st.code(line)
+        elif section_type == "result":
+            with st.expander("📊 **Tool Results**", expanded=False, key=f"result_{unique_key}"):
+                for line in content:
+                    st.json(line) if line.startswith('{') else st.text(line)
 
 # Khởi tạo session state
 def init_session_state():
-    if 'messages' not in st.session_state:
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": "🤖 Hi! I'm your autonomous AI career assistant powered by advanced ReAct framework. I can help you with:\n\n📊 **Database Analysis**: Real-time job market insights and salary data\n📈 **Skill Visualization**: Interactive plots of skill demand trends\n💼 **Career Guidance**: Personalized recommendations based on current market data\n🎯 **Autonomous Research**: I'll automatically query databases and create visualizations without asking for permission\n\nWhat would you like to explore in the job market today?"
-            }
-        ]
-    
-    # Initialize image storage for generated plots
-    if 'last_generated_image' not in st.session_state:
-        st.session_state.last_generated_image = None
-    
-    # Initialize the autonomous agent if not already done
+    # Initialize chatbot if not already done
     if 'chatbot' not in st.session_state:
-        st.session_state.chatbot = SkillsAnalyzerChatbot()
-        # Configure for web interface
-        st.session_state.chatbot.verbose_mode = False  # Disable verbose for cleaner web UI
-        st.session_state.chatbot.thought_process_enabled = False  # Disable thought process display for web
-        st.session_state.chatbot.max_autonomous_cycles = 5  # Reduce cycles for web environment
+        st.session_state.chatbot = StreamlitSkillsAnalyzerChatbot()
+    
+    # Initialize messages for compatibility (optional)
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
 
-# Hiển thị tin nhắn chat với Streamlit components
+# Hiển thị tin nhắn chat với enhanced chatbot system
 def display_chat_messages():
-    """Display chat messages using proper Streamlit components with image support"""
-    for i, message in enumerate(st.session_state.messages):
-        if message["role"] == "assistant":
-            # AI Message
-            with st.chat_message("assistant", avatar="🤖"):
-                st.markdown(message["content"])
-                
-                # Check if there are any images to display from the autonomous agent
-                if hasattr(st.session_state, 'last_generated_image') and st.session_state.last_generated_image:
-                    st.image(st.session_state.last_generated_image, caption="Generated Visualization", use_column_width=True)
-                    # Clear the image after displaying to avoid duplication
-                    st.session_state.last_generated_image = None
-        else:
-            # User Message
-            with st.chat_message("user", avatar="👤"):
-                st.markdown(message["content"])
+    """Display chat messages using enhanced chatbot with debug support"""
+    if hasattr(st.session_state, 'chatbot') and hasattr(st.session_state.chatbot, 'display_conversation_with_debug'):
+        # Use the enhanced display method from chatbot class
+        st.session_state.chatbot.display_conversation_with_debug()
+    else:
+        # Fallback to simple display
+        for message in st.session_state.messages:
+            if message["role"] == "assistant":
+                with st.chat_message("assistant", avatar="🤖"):
+                    st.markdown(message["content"])
+            else:
+                with st.chat_message("user", avatar="👤"):
+                    st.markdown(message["content"])
 
-# Hàm xử lý phản hồi AI sử dụng autonomous agent
+# Hàm xử lý phản hồi AI sử dụng enhanced chatbot
 def get_ai_response(user_input):
-    """Get response from the autonomous SkillsAnalyzerChatbot agent"""
+    """Get response from the enhanced SkillsAnalyzerChatbot"""
     try:
-        # Use the autonomous agent from session state
         chatbot = st.session_state.chatbot
-        
-        # Reset any previous stored messages
-        chatbot.last_print_message = None
-        
-        # Get response from autonomous agent
         response = chatbot.chat(user_input)
         
-        # Check if any visualizations were generated
-        import matplotlib.pyplot as plt
+        # Check for generated visualizations
         import os
+        plot_files = [f for f in os.listdir('.') if f.endswith(('.png', '.jpg', '.jpeg', '.svg')) 
+                     and any(keyword in f.lower() for keyword in ['skill', 'plot', 'chart', 'graph'])]
         
-        # Look for any newly generated plot files
-        plot_files = []
-        for file in os.listdir('.'):
-            if file.endswith(('.png', '.jpg', '.jpeg', '.svg')) and 'skill' in file.lower():
-                plot_files.append(file)
-        
-        # If plots were generated, store the most recent one
         if plot_files:
-            # Sort by modification time and get the most recent
+            # Get the most recent plot
             latest_plot = max(plot_files, key=os.path.getmtime)
-            st.session_state.last_generated_image = latest_plot
+            response += f"\n\n📊 **Visualization Generated:** {latest_plot}"
         
-        # Combine agent response with any captured output
-        final_response = ""
-        
-        # Add the main response if available
-        if response and response.strip():
-            final_response += response.strip()
-        
-        # Add any captured agent analysis from print_message
-        if chatbot.last_print_message:
-            if final_response:
-                final_response += "\n\n---\n\n"
-            final_response += f"📋 **Agent Analysis:** {chatbot.last_print_message}"
-        
-        # If plots were generated, mention them
-        if plot_files:
-            if final_response:
-                final_response += "\n\n"
-            final_response += f"📊 **Generated Visualization:** I've created a visualization based on your request. You can see it displayed above."
-        
-        # If no response, provide a default message
-        if not final_response:
-            final_response = "🤖 I've processed your request using my autonomous analysis tools. The results should be displayed above, including any generated visualizations."
-        
-        return final_response
+        return response
         
     except Exception as e:
-        error_msg = f"❌ **Autonomous Agent Error:** {str(e)}\n\nThe agent encountered an issue while processing your request. Please try rephrasing your question or ask about job market trends, skills analysis, or career insights."
-        print(f"Streamlit AI Response Error: {e}")  # For debugging
+        error_msg = f"❌ **Error:** {str(e)}\n\nPlease try rephrasing your question."
         return error_msg
 
 # Main app với enhanced features từ genai.html
@@ -626,145 +992,16 @@ def main():
     st.markdown("---")
     st.markdown('<div id="chat-section"></div>', unsafe_allow_html=True)
     
-    # Chat Interface Header
-    st.markdown("""
-    <div style="text-align: center; margin: 2rem 0;">
-        <h2 style="margin: 0; font-size: 2rem; font-weight: 700; color: #1e293b;">💬 Chat with Your Autonomous AI Agent</h2>
-        <p style="margin: 0.5rem 0 0 0; color: #6b7280;">Real-time database analysis • Automatic visualizations • Career insights</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Create highlighted container for chat section
-    st.markdown('<div class="chat-section-highlight">', unsafe_allow_html=True)
-    
-    # Chat Interface Card
-    st.markdown("""
-    <div class="ai-header-card">
-        <div class="header-content">
-            <div class="icon-container">
-                <i class="fas fa-robot"></i>
-            </div>
-            <div class="text-container">
-                <h3>Career AI Agent</h3>
-                <p>
-                    <span class="status-dot"></span>
-                    Ready to analyze the job market...
-                </p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Chat Messages Container with fixed height and proper styling
-    st.markdown("### 💭 Conversation")
-    
-    # Create a chat container with margins
-    st.markdown("""
-    <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    """, unsafe_allow_html=True)
-    
-    # Display chat messages in a scrollable container
-    chat_container = st.container(height=400)
-    with chat_container:
-        display_chat_messages()
-    
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Chat Input Section - centered with max width
-    st.markdown("""
-    <div style="max-width: 800px; margin: 2rem auto;">
-    """, unsafe_allow_html=True)
-    
-    st.markdown("### 💬 Ask Your Question")
-    
-    # Chat input form
-    with st.form(key="chat_form", clear_on_submit=True):
-        user_input = st.text_area(
-            "Type your message here...", 
-            placeholder="Ask about skills, careers, salaries, job market trends, or request visualizations...",
-            height=120,
-            label_visibility="collapsed"
-        )
-        
-        col_btn1, col_btn2 = st.columns([3, 1])
-        with col_btn1:
-            send_button = st.form_submit_button("🚀 Send Message", use_container_width=True, type="primary")
-        with col_btn2:
-            clear_button = st.form_submit_button("🗑️ Clear", use_container_width=True)
-    
-    # Handle form submissions
-    if send_button and user_input:
-        # Add user message
-        st.session_state.messages.append({
-            "role": "user", 
-            "content": user_input
-        })
-        
-        # Get AI response
-        with st.spinner("🤖 AI Agent is analyzing and querying database..."):
-            ai_response = get_ai_response(user_input)
-            st.session_state.messages.append({
-                "role": "assistant", 
-                "content": ai_response
-            })
-        
-        # Refresh to show new messages
-        st.rerun()
-    
-    if clear_button:
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": "🤖 Hi! I'm your autonomous AI career assistant. I can analyze job market data, create visualizations, and provide career insights. What would you like to explore?"
-            }
-        ]
-        # Clear any stored images
-        st.session_state.last_generated_image = None
-        st.rerun()
-    
-    # Quick Suggestions Section - below the input
-    st.markdown("#### 🚀 Quick Suggestions")
-    suggestions = [
-        "📊 What are the most in-demand skills right now?",
-        "📈 Plot Python vs JavaScript demand trends",
-        "💰 Show me salary ranges for data science roles",
-        "🎯 Analyze AI/ML job market trends",
-        "📊 Compare frontend framework popularity",
-        "🔍 Find the hottest skills in cybersecurity",
-        "📋 What skills should I learn for remote work?",
-        "💼 Visualize React job opportunities over time"
-    ]
-    
-    # Display suggestions in a grid
-    cols = st.columns(2)
-    for i, suggestion in enumerate(suggestions):
-        with cols[i % 2]:
-            if st.button(suggestion, key=f"suggestion_{i}", use_container_width=True):
-                st.session_state.messages.append({
-                    "role": "user", 
-                    "content": suggestion
-                })
-                ai_response = get_ai_response(suggestion)
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": ai_response
-                })
-                st.rerun()
-    
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Render the enhanced chat interface with compact settings
+    render_chat_interface()
     
     # Display Generated Visualizations Section
     st.markdown("---")
     st.markdown("### 📊 Generated Visualizations")
     
     # Check for any generated plot files
-    import os
-    plot_files = []
-    for file in os.listdir('.'):
-        if file.endswith(('.png', '.jpg', '.jpeg', '.svg')) and any(keyword in file.lower() for keyword in ['skill', 'plot', 'chart', 'graph']):
-            plot_files.append(file)
+    plot_files = [f for f in os.listdir('.') if f.endswith(('.png', '.jpg', '.jpeg', '.svg')) 
+                  and any(keyword in f.lower() for keyword in ['skill', 'plot', 'chart', 'graph'])]
     
     if plot_files:
         # Sort by modification time and display the most recent ones
@@ -780,7 +1017,7 @@ def main():
                     # Add download button
                     with open(plot_file, "rb") as file:
                         st.download_button(
-                            label=f"📥 Download {plot_file}",
+                            label=f"📥 Download",
                             data=file.read(),
                             file_name=plot_file,
                             mime="image/png",
@@ -789,63 +1026,7 @@ def main():
                 except Exception as e:
                     st.error(f"Error displaying {plot_file}: {str(e)}")
     else:
-        st.info("📊 No visualizations generated yet. Ask the AI agent to create charts or analyze data to see visualizations here!")
-        st.markdown("#### 🚀 Try These Autonomous Queries:")
-        suggestions = [
-            "� What are the most in-demand skills right now?",
-            "📈 Plot Python vs JavaScript demand trends",
-            "� Show me salary ranges for data science roles",
-            "🎯 Analyze AI/ML job market trends",
-            "� Compare frontend framework popularity",
-            "🔍 Find the hottest skills in cybersecurity",
-            "📋 What skills should I learn for remote work?",
-            "💼 Visualize React job opportunities over time"
-        ]
-        
-        for suggestion in suggestions:
-            if st.button(suggestion, key=f"suggestion_{suggestion[:10]}", use_container_width=True):
-                st.session_state.messages.append({
-                    "role": "user", 
-                    "content": suggestion
-                })
-                ai_response = get_ai_response(suggestion)
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": ai_response
-                })
-                st.rerun()
-        
-        # Real-time Market Insights Widget
-        st.markdown("""
-        <div class="material-card" style="margin-top: 1.5rem;">
-            <h4 style="margin: 0 0 1rem 0; font-weight: 600; color: #1e293b;">📈 Live Market Data</h4>
-            <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 1rem;">Powered by autonomous database analysis</p>
-            <div style="font-size: 0.875rem; color: #374151;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>🤖 AI/ML Skills</span>
-                    <span style="color: #10b981; font-weight: 500;">↗ Hot Trend</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>🐍 Python Jobs</span>
-                    <span style="color: #10b981; font-weight: 500;">↗ High Demand</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>🏠 Remote Work</span>
-                    <span style="color: #3b82f6; font-weight: 500;">→ Stable</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>🔐 Cybersecurity</span>
-                    <span style="color: #10b981; font-weight: 500;">↗ Growing</span>
-                </div>
-            </div>
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
-                <p style="font-size: 0.75rem; color: #6b7280; margin: 0;">💡 Ask the AI agent for detailed analysis and visualizations!</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Close the chat section highlight container
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.info("📊 No visualizations generated yet. Ask the AI agent to create charts and analyze data!")
 
 if __name__ == "__main__":
     main()
