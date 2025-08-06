@@ -19,9 +19,11 @@ if root_dir not in sys.path:
 from tools.psycopg_query import query_database
 from tools.recommender_job import recommend_jobs
 from tools.toolbox import (
+    plot_skill_trend,
+    plot_job_trend,
     create_dummy_line_chart,
-    analyze_job_expertise_frequency,
-    analyze_skill_frequency
+    get_top_job_expertises,
+    get_top_skills,
 )
 # Local imports
 from .message_manager import MessageManager
@@ -127,19 +129,21 @@ class SkillsAnalyzerChatbot:
             # Setup core tools for analysis
             self.available_tools = [
                 query_database,
-                analyze_skill_frequency,
-                analyze_job_expertise_frequency,
+                plot_skill_trend,
+                plot_job_trend,
                 create_dummy_line_chart,
-                recommend_jobs
+                get_top_job_expertises,
+                get_top_skills
             ]
             
             # Create tool function mapping for manual execution
             self.tool_functions = {
                 'query_database': query_database,
-                'analyze_skill_frequency': analyze_skill_frequency,
-                'analyze_job_expertise_frequency': analyze_job_expertise_frequency,
+                'plot_skill_trend': plot_skill_trend,
+                'plot_job_trend': plot_job_trend,
                 'create_dummy_line_chart': create_dummy_line_chart,
-                'recommend_jobs': recommend_jobs
+                'get_top_job_expertises': get_top_job_expertises,
+                'get_top_skills': get_top_skills
             }
             
             # Optional: Add code execution tool if needed

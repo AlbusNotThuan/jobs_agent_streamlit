@@ -29,17 +29,6 @@ if tools_path not in sys.path:
 
 try:
     from chatbot_class import SkillsAnalyzerChatbot
-    from chart_tools import (
-        create_bar_chart,
-        create_line_chart,
-        create_pie_chart,
-        create_heatmap,
-        create_histogram,
-        create_scatter_plot,
-        create_multi_line_chart
-    )
-    from tools.psycopg_query import query_database
-    from tools.recommender_job import recommend_jobs
 except ImportError as e:
     st.error(f"⚠️ Import error: {e}")
     st.error("Make sure all required files are in the same directory")
@@ -534,29 +523,34 @@ class StreamlitSkillsAnalyzerChatbot:
     
     def _display_streamlit_chart(self, result: Dict[str, Any]) -> None:
         """
-        Bare minimum function to display a 4-week skill frequency chart.
+        Displays a chart with a dynamic title based on the analysis type.
         This version correctly unpacks data serialized with pandas' .to_dict('split').
         """
         try:
             chart_data_dict = result.get("chart_data")
+            
+            # --- START OF THE FIX ---
+            # 1. Get the summary dictionary provided by the tool.
+            summary = result.get("summary", {})
+            # 2. Get the specific analysis type from the summary. Default to "Analysis Trend".
+            analysis_type = summary.get("analysis_type", "Analysis Trend")
+            # --- END OF THE FIX ---
 
-            # 1. Validation: Check if chart data exists.
+            # Validation: Check if chart data exists.
             if chart_data_dict is None:
                 st.warning("📊 No chart data was received from the tool.")
                 return
 
-            # --- START OF THE FIX ---
-            # 2. Conversion: Reconstruct the DataFrame from the clean dictionary.
-            # The data arrives in the format {'index': [...], 'columns': [...], 'data': [[...]]}
+            # Conversion: Reconstruct the DataFrame from the clean dictionary.
             chart_data = pd.DataFrame(
                 chart_data_dict['data'],
                 index=pd.to_datetime(chart_data_dict['index']),
                 columns=chart_data_dict['columns']
             )
-            # --- END OF THE FIX ---
 
-            # 3. Display: Render the chart with a simple, static title.
-            st.subheader("📈 Skill Frequency (Last 4 Weeks)")
+            # --- USE THE DYNAMIC TITLE ---
+            # 3. Display the chart with the dynamic title from the summary.
+            st.subheader(f"📈 {analysis_type} (Last 4 Weeks)")
             st.line_chart(chart_data)
 
         except Exception as e:
