@@ -19,11 +19,14 @@ from io import BytesIO
 import ast
 
 
-from google import genai
-from google.genai import types
 
-# Import các functions từ skills_analyzer và chart_tools
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Fix import errors for tools modules
+import sys
+import os
+tools_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools")
+if tools_path not in sys.path:
+    sys.path.append(tools_path)
+
 try:
     from chatbot_class import SkillsAnalyzerChatbot
     from chart_tools import (
@@ -36,6 +39,7 @@ try:
         create_multi_line_chart
     )
     from tools.psycopg_query import query_database
+    from tools.recommender_job import recommend_jobs
 except ImportError as e:
     st.error(f"⚠️ Import error: {e}")
     st.error("Make sure all required files are in the same directory")
@@ -873,7 +877,24 @@ def main():
 
     # Title and description
     st.title("🤖 LinkedIn Jobs Skills Analyzer")
-    st.markdown("AI-powered chatbot for analyzing job market skills and trends with interactive charts")
+    st.markdown("""
+<span style='font-size:2em'>👋</span> **Hi, I'm the LinkedIn Jobs Skills Analyzer Chatbot!** 🤖
+
+<span style='font-size:1.2em'>✨ I am an AI-powered assistant designed to help you explore the job market and analyze skills trends.</span>
+
+<span style='font-size:1.1em'>
+I can:
+
+- 🔍 **Search and analyze** the job market database
+- 🧑 **Find jobs** that match your requirements
+- 🤝 **Recommend jobs** based on your skills, industry, and position
+- 📈 **Analyze and visualize** trending skills, job categories, and hiring trends
+- 📊 **Display interactive charts** and statistics
+- 💬 **Answer your questions** about job market data, skills, and trends
+</span>
+
+<span style='font-size:1.1em'>💡 Just type your questions or requests below and I'll get started!</span>
+""", unsafe_allow_html=True)
 
     # Sidebar with help information and controls
     with st.sidebar:
@@ -1016,8 +1037,6 @@ def main():
 
     # Footer
     st.markdown("---")
-    st.markdown("💡 **Tip:** Ask specific questions about skills, trends, or job categories for detailed analysis with charts!")
-    st.markdown("🔍 **Debug Mode:** Toggle in sidebar to see AI thinking process and tool usage in real-time!")
 
 if __name__ == "__main__":
     main()
