@@ -54,68 +54,9 @@ class StreamlitSkillsAnalyzerChatbot:
         if 'session_active' not in st.session_state:
             st.session_state.session_active = True
         if 'show_debug_info' not in st.session_state:
-            st.session_state.show_debug_info = True
+            st.session_state.show_debug_info = False
 
-    def create_chart_from_data(self, data_json: str, chart_type: str = "bar", 
-                              title: str = "Chart", xlabel: str = "Categories", 
-                              ylabel: str = "Values") -> BytesIO:
-        """
-        Creates a chart and returns it as BytesIO object for Streamlit display using chart_tools functions.
-
-        Args:
-            data_json (str): Dictionary data as JSON string with category names as keys and values as numbers.
-            chart_type (str): Type of chart ("bar", "pie", "line"). Defaults to "bar".
-            title (str): Title of the chart. Defaults to "Chart".
-            xlabel (str): Label for x-axis. Defaults to "Categories".
-            ylabel (str): Label for y-axis. Defaults to "Values".
-
-        Returns:
-            BytesIO: Chart image as BytesIO object.
-        """
-        try:
-            data = json.loads(data_json)
-        except:
-            # Return empty BytesIO if parsing fails
-            return BytesIO()
-            
-        # Create temp file path
-        import tempfile
-        temp_dir = tempfile.mkdtemp()
-        temp_file = os.path.join(temp_dir, f"chart_{chart_type}.png")
-        
-        # Use chart_tools functions
-        if chart_type == "bar":
-            create_bar_chart(data, title=title, xlabel=xlabel, ylabel=ylabel, 
-                           figsize=(10, 6), save_path=temp_file)
-        elif chart_type == "pie":
-            create_pie_chart(data, title=title, figsize=(8, 8), save_path=temp_file)
-        elif chart_type == "line":
-            categories = list(data.keys())
-            values = list(data.values())
-            create_line_chart(categories, values, title=title, xlabel=xlabel, 
-                            ylabel=ylabel, figsize=(10, 6), save_path=temp_file)
-        
-        # Read image and convert to BytesIO
-        try:
-            img_buffer = BytesIO()
-            if os.path.exists(temp_file):
-                with open(temp_file, 'rb') as f:
-                    img_buffer.write(f.read())
-                img_buffer.seek(0)
-            else:
-                st.error(f"❌ Chart file not created: {temp_file}")
-                return BytesIO()
-                
-            # Clean up temp file
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-            if os.path.exists(temp_dir):
-                os.rmdir(temp_dir)
-            
-            return img_buffer
-        except Exception as e:
-            st.error(f"❌ Error creating chart: {str(e)}")
-            return BytesIO()
+    
 
     def display_message(self, message: str) -> None:
         """

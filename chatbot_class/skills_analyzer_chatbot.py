@@ -133,7 +133,8 @@ class SkillsAnalyzerChatbot:
                 plot_job_trend,
                 create_dummy_line_chart,
                 get_top_job_expertises,
-                get_top_skills
+                get_top_skills,
+                recommend_jobs
             ]
             
             # Create tool function mapping for manual execution
@@ -143,7 +144,8 @@ class SkillsAnalyzerChatbot:
                 'plot_job_trend': plot_job_trend,
                 'create_dummy_line_chart': create_dummy_line_chart,
                 'get_top_job_expertises': get_top_job_expertises,
-                'get_top_skills': get_top_skills
+                'get_top_skills': get_top_skills,
+                'recommend_jobs': recommend_jobs
             }
             
             # Optional: Add code execution tool if needed
