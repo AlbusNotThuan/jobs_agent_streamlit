@@ -19,11 +19,14 @@ from io import BytesIO
 import ast
 
 
-from google import genai
-from google.genai import types
 
-# Import các functions từ skills_analyzer và chart_tools
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Fix import errors for tools modules
+import sys
+import os
+tools_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools")
+if tools_path not in sys.path:
+    sys.path.append(tools_path)
+
 try:
     from chatbot_class import SkillsAnalyzerChatbot
 except ImportError as e:
@@ -51,68 +54,9 @@ class StreamlitSkillsAnalyzerChatbot:
         if 'session_active' not in st.session_state:
             st.session_state.session_active = True
         if 'show_debug_info' not in st.session_state:
-            st.session_state.show_debug_info = True
+            st.session_state.show_debug_info = False
 
-    def create_chart_from_data(self, data_json: str, chart_type: str = "bar", 
-                              title: str = "Chart", xlabel: str = "Categories", 
-                              ylabel: str = "Values") -> BytesIO:
-        """
-        Creates a chart and returns it as BytesIO object for Streamlit display using chart_tools functions.
-
-        Args:
-            data_json (str): Dictionary data as JSON string with category names as keys and values as numbers.
-            chart_type (str): Type of chart ("bar", "pie", "line"). Defaults to "bar".
-            title (str): Title of the chart. Defaults to "Chart".
-            xlabel (str): Label for x-axis. Defaults to "Categories".
-            ylabel (str): Label for y-axis. Defaults to "Values".
-
-        Returns:
-            BytesIO: Chart image as BytesIO object.
-        """
-        try:
-            data = json.loads(data_json)
-        except:
-            # Return empty BytesIO if parsing fails
-            return BytesIO()
-            
-        # Create temp file path
-        import tempfile
-        temp_dir = tempfile.mkdtemp()
-        temp_file = os.path.join(temp_dir, f"chart_{chart_type}.png")
-        
-        # Use chart_tools functions
-        if chart_type == "bar":
-            create_bar_chart(data, title=title, xlabel=xlabel, ylabel=ylabel, 
-                           figsize=(10, 6), save_path=temp_file)
-        elif chart_type == "pie":
-            create_pie_chart(data, title=title, figsize=(8, 8), save_path=temp_file)
-        elif chart_type == "line":
-            categories = list(data.keys())
-            values = list(data.values())
-            create_line_chart(categories, values, title=title, xlabel=xlabel, 
-                            ylabel=ylabel, figsize=(10, 6), save_path=temp_file)
-        
-        # Read image and convert to BytesIO
-        try:
-            img_buffer = BytesIO()
-            if os.path.exists(temp_file):
-                with open(temp_file, 'rb') as f:
-                    img_buffer.write(f.read())
-                img_buffer.seek(0)
-            else:
-                st.error(f"❌ Chart file not created: {temp_file}")
-                return BytesIO()
-                
-            # Clean up temp file
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-            if os.path.exists(temp_dir):
-                os.rmdir(temp_dir)
-            
-            return img_buffer
-        except Exception as e:
-            st.error(f"❌ Error creating chart: {str(e)}")
-            return BytesIO()
+    
 
     def display_message(self, message: str) -> None:
         """
@@ -868,7 +812,24 @@ def main():
 
     # Title and description
     st.title("🤖 LinkedIn Jobs Skills Analyzer")
-    st.markdown("AI-powered chatbot for analyzing job market skills and trends with interactive charts")
+    st.markdown("""
+<span style='font-size:2em'>👋</span> **Hi, I'm the LinkedIn Jobs Skills Analyzer Chatbot!** 🤖
+
+<span style='font-size:1.2em'>✨ I am an AI-powered assistant designed to help you explore the job market and analyze skills trends.</span>
+
+<span style='font-size:1.1em'>
+I can:
+
+- 🔍 **Search and analyze** the job market database
+- 🧑 **Find jobs** that match your requirements
+- 🤝 **Recommend jobs** based on your skills, industry, and position
+- 📈 **Analyze and visualize** trending skills, job categories, and hiring trends
+- 📊 **Display interactive charts** and statistics
+- 💬 **Answer your questions** about job market data, skills, and trends
+</span>
+
+<span style='font-size:1.1em'>💡 Just type your questions or requests below and I'll get started!</span>
+""", unsafe_allow_html=True)
 
     # Sidebar with help information and controls
     with st.sidebar:
@@ -1011,8 +972,6 @@ def main():
 
     # Footer
     st.markdown("---")
-    st.markdown("💡 **Tip:** Ask specific questions about skills, trends, or job categories for detailed analysis with charts!")
-    st.markdown("🔍 **Debug Mode:** Toggle in sidebar to see AI thinking process and tool usage in real-time!")
 
 if __name__ == "__main__":
     main()

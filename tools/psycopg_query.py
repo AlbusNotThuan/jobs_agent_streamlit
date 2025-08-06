@@ -24,9 +24,9 @@ def query_database(query: str, params: Optional[list[str]] = None) -> list:
         list: A list of rows (each row is a tuple) returned by the query, or None if no results.
     """
 
-    print(f"Executing query: {query}")
-    if params:
-        print(f"With parameters: {params}")
+    # print(f"Executing query: {query}")
+    # if params:
+    #     print(f"With parameters: {params}")
     with psycopg.connect(DB_CONNECTION) as conn:
         with conn.cursor() as cur:
             cur.execute(query, params)

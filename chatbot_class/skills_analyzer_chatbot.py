@@ -17,6 +17,7 @@ root_dir = os.path.abspath(os.path.dirname(__file__) + '/../')
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 from tools.psycopg_query import query_database
+from tools.recommender_job import recommend_jobs
 from tools.toolbox import (
     plot_skill_trend,
     plot_job_trend,
@@ -132,7 +133,8 @@ class SkillsAnalyzerChatbot:
                 plot_job_trend,
                 create_dummy_line_chart,
                 get_top_job_expertises,
-                get_top_skills
+                get_top_skills,
+                recommend_jobs
             ]
             
             # Create tool function mapping for manual execution
@@ -142,7 +144,8 @@ class SkillsAnalyzerChatbot:
                 'plot_job_trend': plot_job_trend,
                 'create_dummy_line_chart': create_dummy_line_chart,
                 'get_top_job_expertises': get_top_job_expertises,
-                'get_top_skills': get_top_skills
+                'get_top_skills': get_top_skills,
+                'recommend_jobs': recommend_jobs
             }
             
             # Optional: Add code execution tool if needed
