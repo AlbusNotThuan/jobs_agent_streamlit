@@ -12,6 +12,20 @@ from google.genai import types
 from dotenv import load_dotenv
 import sys
 import os
+
+
+
+# Import career advisor directly
+try:
+    from chatbot_class.multi_agent.career_advisor_agent.unified_career_advisor import get_career_advice
+    CAREER_ADVISOR_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Career advisor not available: {e}")
+    CAREER_ADVISOR_AVAILABLE = False
+    get_career_advice = None
+
+
+
 # Thêm thư mục gốc vào sys.path để import tools
 root_dir = os.path.abspath(os.path.dirname(__file__) + '/../')
 if root_dir not in sys.path:
@@ -27,6 +41,8 @@ from tools.toolbox import (
 )
 # Local imports
 from .message_manager import MessageManager
+
+
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +79,10 @@ class SkillsAnalyzerChatbot:
         
         # Session control
         self.session_active = True
+        
+        # Career advisor mode
+        self.career_advisor_mode = False
+        self.career_advisor_available = CAREER_ADVISOR_AVAILABLE
         
         # Display settings
         self.verbose_mode = verbose
@@ -124,10 +144,8 @@ class SkillsAnalyzerChatbot:
         """
         # Import tools locally to avoid circular imports
         try:
-
-            
             # Setup core tools for analysis
-            self.available_tools = [
+            base_tools = [
                 query_database,
                 plot_skill_trend,
                 plot_job_trend,
@@ -136,6 +154,12 @@ class SkillsAnalyzerChatbot:
                 get_top_skills,
                 recommend_jobs
             ]
+            
+            # Add career advisor tool if available
+            if self.career_advisor_available:
+                base_tools.append(get_career_advice)
+                
+            self.available_tools = base_tools
             
             # Create tool function mapping for manual execution
             self.tool_functions = {
@@ -147,6 +171,10 @@ class SkillsAnalyzerChatbot:
                 'get_top_skills': get_top_skills,
                 'recommend_jobs': recommend_jobs
             }
+            
+            # Add career advisor to tool functions if available
+            if self.career_advisor_available:
+                self.tool_functions['get_career_advice'] = get_career_advice
             
             # Optional: Add code execution tool if needed
             self.code_execution_tool = types.Tool(
@@ -196,7 +224,7 @@ class SkillsAnalyzerChatbot:
     def chat(self, user_message: str) -> Dict[str, Any]:
         """
         Main chat function with ReAct framework using Gemini thinking capabilities.
-        Uses a while loop to handle tool calling iteratively.
+        Can use either normal skills analysis or career advisor mode.
 
         Args:
             user_message (str): User's input message.
@@ -216,6 +244,19 @@ class SkillsAnalyzerChatbot:
         self.last_user_message = user_message
         self.message_manager.add_user_message(user_message)
         
+        # Use the normal skills analyzer processing, but modify system instruction if in career advisor mode
+        return self._chat_with_skills_analyzer(user_message)
+    
+    def _chat_with_skills_analyzer(self, user_message: str) -> Dict[str, Any]:
+        """
+        Process chat using normal skills analyzer mode or career advisor mode with get_career_advice tool.
+        
+        Args:
+            user_message (str): User's input message.
+            
+        Returns:
+            Dict[str, Any]: Skills analyzer response.
+        """
         # Initialize process sequence tracking
         process_sequence = []
         
@@ -223,10 +264,35 @@ class SkillsAnalyzerChatbot:
             # Prepare conversation history
             conversation_history = self._create_autonomous_prompt(user_message)
             
+            # Create dynamic system instruction based on mode
+            current_system_instruction = self.system_instruction
+            
+            if self.career_advisor_mode and self.career_advisor_available:
+                # Add career advisor specific instruction
+                career_mode_instruction = """
+
+CAREER ADVISOR MODE ACTIVATED:
+You MUST use the get_career_advice tool for ALL career-related queries. When user asks about:
+- Career guidance, job recommendations, career paths
+- Skills development for career goals  
+- Personality-based career advice
+- "Tôi muốn tư vấn nghề nghiệp", "career advice", etc.
+
+MANDATORY: Call get_career_advice with task parameter containing:
+- sessionId: will be automatically provided
+- message: full conversation history will be automatically provided
+- metadata: additional context information
+
+The get_career_advice tool will automatically receive the full conversation history to provide comprehensive career counseling with proper context. You should present its results clearly to the user.
+
+IMPORTANT: The tool has access to the complete conversation context, so it can provide personalized advice based on the user's background and previous discussions.
+"""
+                current_system_instruction = self.system_instruction + career_mode_instruction
+            
             # Configure generation with thinking and tools
             config = types.GenerateContentConfig(
-                # System and tools
-                system_instruction=self.system_instruction,
+                # System and tools - use dynamic system instruction
+                system_instruction=current_system_instruction,
                 tools=self.available_tools,
                 tool_config={'function_calling_config': {'mode': 'AUTO'}},
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(
@@ -327,7 +393,38 @@ class SkillsAnalyzerChatbot:
                         tool_to_run = self.tool_functions.get(tool_name)
                         if tool_to_run:
                             try:
-                                tool_result = tool_to_run(**tool_args)
+                                # Special handling for get_career_advice to include conversation history
+                                if tool_name == "get_career_advice":
+                                    # Convert conversation history to format expected by career advisor
+                                    conversation_for_career_advisor = []
+                                    for msg in conversation_history:
+                                        if hasattr(msg, 'role') and hasattr(msg, 'parts'):
+                                            role = msg.role
+                                            content = ""
+                                            for part in msg.parts:
+                                                if hasattr(part, 'text') and part.text:
+                                                    content += part.text
+                                            if content.strip():
+                                                conversation_for_career_advisor.append({
+                                                    "role": role, 
+                                                    "content": content.strip()
+                                                })
+                                    
+                                    # Prepare task parameter for get_career_advice
+                                    task_param = {
+                                        "sessionId": self.message_manager.session_id,
+                                        "message": conversation_for_career_advisor,
+                                        "metadata": {
+                                            "mode": "career_advisor",
+                                            "source": "skills_analyzer",
+                                            "current_query": user_message,
+                                            **tool_args  # Include any additional args from the AI call
+                                        }
+                                    }
+                                    
+                                    tool_result = tool_to_run(task_param)
+                                else:
+                                    tool_result = tool_to_run(**tool_args)
                                 
                                 # Record tool result step
                                 tool_result_step = {
@@ -552,7 +649,19 @@ class SkillsAnalyzerChatbot:
             print(f"🧠 Thinking budget set to: {budget} tokens")
         else:
             print("❌ Thinking budget must be between 0 and 24576 tokens")
-    
+    def set_system_instruction(self, instruction: str) -> None:
+        """
+        Set the system instruction for the chatbot.
+
+        Args:
+            instruction (str): New system instruction string.
+
+        Returns:
+            None
+        """
+        self.system_instruction = instruction
+        print("📝 System instruction updated")
+
     def get_thinking_budget(self) -> int:
         """
         Get current thinking budget.
@@ -757,6 +866,49 @@ class SkillsAnalyzerChatbot:
             bool: True if enabled, False otherwise.
         """
         return hasattr(self, 'code_execution_tool') and self.code_execution_tool in self.available_tools
+    
+    def toggle_career_advisor_mode(self, enabled: Optional[bool] = None) -> bool:
+        """
+        Toggle or set career advisor mode.
+        
+        Args:
+            enabled (Optional[bool]): If None, toggles current state. If True/False, sets the state.
+            
+        Returns:
+            bool: New state of career advisor mode.
+        """
+        if not self.career_advisor_available:
+            print("⚠️ Career advisor is not available. Please check the unified_career_advisor import.")
+            return False
+            
+        if enabled is None:
+            self.career_advisor_mode = not self.career_advisor_mode
+        else:
+            self.career_advisor_mode = enabled
+            
+        mode_text = "CAREER ADVISOR" if self.career_advisor_mode else "SKILLS ANALYZER"
+        status_emoji = "🎯" if self.career_advisor_mode else "🔧"
+        
+        print(f"{status_emoji} Mode switched to: {mode_text}")
+        return self.career_advisor_mode
+    
+    def is_career_advisor_mode(self) -> bool:
+        """
+        Check if currently in career advisor mode.
+        
+        Returns:
+            bool: True if career advisor mode is enabled.
+        """
+        return self.career_advisor_mode and self.career_advisor_available
+    
+    def get_current_mode(self) -> str:
+        """
+        Get current chatbot mode.
+        
+        Returns:
+            str: Current mode ("career_advisor" or "skills_analyzer").
+        """
+        return "career_advisor" if self.is_career_advisor_mode() else "skills_analyzer"
     
     # =============================================================================
     # PRIVATE HELPER METHODS  

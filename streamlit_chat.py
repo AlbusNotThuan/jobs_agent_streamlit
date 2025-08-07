@@ -389,16 +389,93 @@ class StreamlitSkillsAnalyzerChatbot:
                 else:
                     clean_response = chat_result.get("final_response", "🤖 No response generated")
                     
-                    # --- CHANGE 1: This block is now ALWAYS visible (if condition removed) ---
-                    # It will render regardless of the 'show_debug_info' state.
+                    # Handle career advisor mode responses
+                    if chat_result.get("career_mode", False) or st.session_state.career_advisor_mode:
+                        # Check if response contains career advisor tool results
+                        process_sequence = chat_result.get("process_sequence", [])
+                        has_career_tool_result = any(
+                            step.get("type") == "tool_result" and step.get("tool_name") == "career_advisor_tool"
+                            for step in process_sequence
+                        )
+                        
+                        if has_career_tool_result:
+                            st.success("✅ **Career Advisor đã phân tích xong:**")
+                            
+                            # Find career tool result
+                            for step in process_sequence:
+                                if (step.get("type") == "tool_result" and 
+                                    step.get("tool_name") == "career_advisor_tool" and 
+                                    step.get("success", False)):
+                                    
+                                    # Try to parse career advisor result
+                                    try:
+                                        import ast
+                                        tool_result = step.get("result", "")
+                                        
+                                        # If result is a string representation of dict, parse it
+                                        if isinstance(tool_result, str) and tool_result.startswith("{"):
+                                            career_result = ast.literal_eval(tool_result)
+                                            
+                                            # Extract final response from career advisor
+                                            career_response = career_result.get("final_response", "")
+                                            
+                                            # Try to parse JSON from career response
+                                            if career_response:
+                                                try:
+                                                    import json
+                                                    json_response = json.loads(career_response)
+                                                    
+                                                    if json_response.get("status") == "input_required":
+                                                        st.info("💡 **Cần thêm thông tin:**")
+                                                        st.write(json_response.get("message", ""))
+                                                        if json_response.get("next_questions"):
+                                                            st.markdown("**Gợi ý câu hỏi:**")
+                                                            for q in json_response["next_questions"]:
+                                                                st.markdown(f"• {q}")
+                                                    
+                                                    elif json_response.get("career_recommendations"):
+                                                        recs = json_response["career_recommendations"]
+                                                        
+                                                        if recs.get("personality_analysis"):
+                                                            st.markdown("**🧠 Phân tích tính cách:**")
+                                                            st.write(recs["personality_analysis"])
+                                                        
+                                                        if recs.get("recommended_skills"):
+                                                            st.markdown("**🛠️ Kỹ năng đề xuất:**")
+                                                            for skill in recs["recommended_skills"][:5]:
+                                                                st.markdown(f"• {skill}")
+                                                        
+                                                        if recs.get("career_paths"):
+                                                            st.markdown("**💼 Lộ trình nghề nghiệp:**")
+                                                            for path in recs["career_paths"][:3]:
+                                                                st.markdown(f"• {path}")
+                                                        
+                                                        if recs.get("market_insights"):
+                                                            st.markdown("**📊 Thông tin thị trường:**")
+                                                            for insight in recs["market_insights"][:3]:
+                                                                st.markdown(f"• {insight}")
+                                                
+                                                except json.JSONDecodeError:
+                                                    # Display as raw text if not JSON
+                                                    pass
+                                    
+                                    except (ValueError, SyntaxError):
+                                        # If parsing fails, display raw result
+                                        pass
+                        else:
+                            # No career tool result found, but in career mode
+                            st.warning("⚠️ **Career Advisor mode:** AI chưa sử dụng career advisor tool.")
+                    
+                    # Display thinking process (for both modes)
                     process_sequence = chat_result.get("process_sequence", [])
                     if process_sequence:
-                        # --- CHANGE 2: Renamed from "Process Details" to "Thinking Process" ---
-                        with st.expander(f"🧠 **Thinking Process** ({chat_result.get('total_steps', 0)} steps)", expanded=False):
+                        process_title = "🎯 **Career Analysis Process**" if st.session_state.career_advisor_mode else "🧠 **Thinking Process**"
+                        with st.expander(f"{process_title} ({len(process_sequence)} steps)", expanded=False):
                             self._display_process_sequence(process_sequence)
 
-                    # Check for chart data in tool results and display charts
-                    self._check_and_display_charts(chat_result)
+                    # Check for chart data in tool results (only for skills analyzer mode)
+                    if not st.session_state.career_advisor_mode:
+                        self._check_and_display_charts(chat_result)
             
             # --- CHANGE 3: The "Raw Backend Response" expander has been completely removed. ---
 
@@ -833,6 +910,84 @@ I can:
 
     # Sidebar with help information and controls
     with st.sidebar:
+        # Mode Selection Switch
+        st.header("🎯 Chế độ hoạt động")
+        
+        # Initialize mode in session state if not exists
+        if 'career_advisor_mode' not in st.session_state:
+            st.session_state.career_advisor_mode = False
+        
+        # Mode toggle buttons
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            skills_button_style = "primary" if not st.session_state.career_advisor_mode else "secondary"
+            if st.button(
+                "🔧 Skills Analyzer", 
+                type=skills_button_style,
+                help="Phân tích thị trường việc làm và kỹ năng",
+                use_container_width=True
+            ):
+                st.session_state.career_advisor_mode = False
+                if 'chatbot' in st.session_state:
+                    st.session_state.chatbot.chatbot.toggle_career_advisor_mode(False)
+                st.rerun()
+        
+        with col2:
+            career_button_style = "primary" if st.session_state.career_advisor_mode else "secondary"
+            if st.button(
+                "🎯 Career Advisor", 
+                type=career_button_style,
+                help="Tư vấn nghề nghiệp cá nhân hóa",
+                use_container_width=True
+            ):
+                st.session_state.career_advisor_mode = True
+                if 'chatbot' in st.session_state:
+                    st.session_state.chatbot.chatbot.toggle_career_advisor_mode(True)
+                st.rerun()
+        
+        # Display current mode with styling
+        current_mode = "Career Advisor" if st.session_state.career_advisor_mode else "Skills Analyzer"
+        mode_emoji = "🎯" if st.session_state.career_advisor_mode else "🔧"
+        mode_color = "#FF6B6B" if st.session_state.career_advisor_mode else "#4ECDC4"
+        
+        st.markdown(f"""
+        <div style="
+            background-color: {mode_color}20;
+            border: 2px solid {mode_color};
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            margin: 10px 0px;
+        ">
+            <strong>{mode_emoji} {current_mode} Mode</strong>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Mode-specific help text
+        if st.session_state.career_advisor_mode:
+            st.markdown("""
+            **🎯 Career Advisor Mode:**
+            - Phân tích tính cách và sở thích
+            - Tư vấn nghề nghiệp phù hợp
+            - Lộ trình phát triển sự nghiệp
+            - Đề xuất kỹ năng cần học
+            
+            *Ví dụ: "Tôi giỏi toán, thích công nghệ, muốn tư vấn nghề nghiệp"*
+            """)
+        else:
+            st.markdown("""
+            **🔧 Skills Analyzer Mode:**
+            - Phân tích thị trường việc làm
+            - Xu hướng kỹ năng hot
+            - Thống kê ngành nghề
+            - Biểu đồ và báo cáo
+            
+            *Ví dụ: "analyze trending skills", "top programming jobs"*
+            """)
+        
+        st.divider()
+        
         st.header("📋 Help & Commands")
         st.markdown("""
         **📊 General Analysis:**
@@ -944,13 +1099,25 @@ I can:
     # Initialize chatbot
     if 'chatbot' not in st.session_state:
         st.session_state.chatbot = StreamlitSkillsAnalyzerChatbot()
+    
+    # Sync chatbot mode with session state
+    if hasattr(st.session_state.chatbot, 'chatbot'):
+        current_chatbot_mode = st.session_state.chatbot.chatbot.is_career_advisor_mode()
+        if current_chatbot_mode != st.session_state.career_advisor_mode:
+            st.session_state.chatbot.chatbot.toggle_career_advisor_mode(st.session_state.career_advisor_mode)
 
     # Display chat history with enhanced formatting
     st.session_state.chatbot.display_conversation_with_debug()
 
     # Chat input
     if st.session_state.session_active:
-        user_input = st.chat_input("Ask me about job market skills and trends...")
+        # Dynamic placeholder based on mode
+        if st.session_state.career_advisor_mode:
+            placeholder = "Ví dụ: 'Tôi giỏi toán, thích công nghệ, muốn tư vấn nghề nghiệp phù hợp...'"
+        else:
+            placeholder = "Ask me about job market skills and trends..."
+            
+        user_input = st.chat_input(placeholder)
         
         if user_input:
             # Display user message

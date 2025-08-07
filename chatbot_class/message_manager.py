@@ -154,6 +154,18 @@ class MessageManager:
             return self.messages[-limit:]
         return self.messages.copy()
     
+    def get_recent_messages(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get recent conversation messages.
+        
+        Args:
+            limit (int): Maximum number of recent messages to return.
+            
+        Returns:
+            List[Dict[str, Any]]: List of recent message dictionaries.
+        """
+        return self.messages[-limit:] if self.messages else []
+    
     def get_conversation_context(self, limit: int = 10) -> str:
         """
         Get formatted conversation context for the AI model.
