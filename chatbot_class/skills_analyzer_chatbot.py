@@ -83,6 +83,7 @@ class SkillsAnalyzerChatbot:
         # Career advisor mode
         self.career_advisor_mode = False
         self.career_advisor_available = CAREER_ADVISOR_AVAILABLE
+        self.career_advisor_session_id = None  # Track career advisor session ID
         
         # Display settings
         self.verbose_mode = verbose
@@ -215,6 +216,7 @@ class SkillsAnalyzerChatbot:
         self.session_active = True
         self.last_print_message = None
         self.last_user_message = None
+        self.career_advisor_session_id = None  # Reset career advisor session
         
         new_session_id = self.message_manager.session_id
         print(f"🆕 Started new chat session: {new_session_id}")
@@ -276,16 +278,14 @@ You MUST use the get_career_advice tool for ALL career-related queries. When use
 - Career guidance, job recommendations, career paths
 - Skills development for career goals  
 - Personality-based career advice
-- "Tôi muốn tư vấn nghề nghiệp", "career advice", etc.
+- "career advice", etc.
 
-MANDATORY: Call get_career_advice with task parameter containing:
-- sessionId: will be automatically provided
-- message: full conversation history will be automatically provided
-- metadata: additional context information
+CRITICAL: get_career_advice tool sessionId handling:
+- On the FIRST call in a conversation: Do NOT include sessionId in the task parameter
+- On ALL SUBSEQUENT calls: You MUST include the sessionId that was returned in the previous response
+- The sessionId ensures conversation continuity and context preservation
+- Format: {"sessionId": "session_id_from_previous_response", "message": [...], "metadata": {...}}
 
-The get_career_advice tool will automatically receive the full conversation history to provide comprehensive career counseling with proper context. You should present its results clearly to the user.
-
-IMPORTANT: The tool has access to the complete conversation context, so it can provide personalized advice based on the user's background and previous discussions.
 """
                 current_system_instruction = self.system_instruction + career_mode_instruction
             
@@ -393,37 +393,28 @@ IMPORTANT: The tool has access to the complete conversation context, so it can p
                         tool_to_run = self.tool_functions.get(tool_name)
                         if tool_to_run:
                             try:
-                                # Special handling for get_career_advice to include conversation history
+                                # Special handling for get_career_advice to manage sessionId
                                 if tool_name == "get_career_advice":
-                                    # Convert conversation history to format expected by career advisor
-                                    conversation_for_career_advisor = []
-                                    for msg in conversation_history:
-                                        if hasattr(msg, 'role') and hasattr(msg, 'parts'):
-                                            role = msg.role
-                                            content = ""
-                                            for part in msg.parts:
-                                                if hasattr(part, 'text') and part.text:
-                                                    content += part.text
-                                            if content.strip():
-                                                conversation_for_career_advisor.append({
-                                                    "role": role, 
-                                                    "content": content.strip()
-                                                })
+                                    # Extract the task parameter
+                                    task_param = tool_args.get('task', {})
                                     
-                                    # Prepare task parameter for get_career_advice
-                                    task_param = {
-                                        "sessionId": self.message_manager.session_id,
-                                        "message": conversation_for_career_advisor,
-                                        "metadata": {
-                                            "mode": "career_advisor",
-                                            "source": "skills_analyzer",
-                                            "current_query": user_message,
-                                            **tool_args  # Include any additional args from the AI call
-                                        }
-                                    }
+                                    # Add sessionId if we have one from previous career advisor calls
+                                    # This ensures conversation continuity as required by the career advisor
+                                    if self.career_advisor_session_id:
+                                        task_param['sessionId'] = self.career_advisor_session_id
+                                        if self.verbose_mode:
+                                            print(f"🔗 Using existing career advisor sessionId: {self.career_advisor_session_id}")
                                     
+                                    # Execute the tool
                                     tool_result = tool_to_run(task_param)
+                                    
+                                    # Extract and store sessionId from result for future calls
+                                    if isinstance(tool_result, dict) and 'sessionId' in tool_result:
+                                        self.career_advisor_session_id = tool_result['sessionId']
+                                        if self.verbose_mode:
+                                            print(f"💾 Stored career advisor sessionId: {self.career_advisor_session_id}")
                                 else:
+                                    # Execute tool with the arguments provided by the model
                                     tool_result = tool_to_run(**tool_args)
                                 
                                 # Record tool result step

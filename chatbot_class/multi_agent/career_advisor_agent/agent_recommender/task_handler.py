@@ -18,7 +18,6 @@ class TaskHandler:
     {
         "sessionId": str | None,  # Optional session ID for conversation continuity
         "message": List[Dict],    # List of message dicts with role/content
-                                  # Supported roles: 'user', 'assistant', 'system', 'tool', 'model'
         "metadata": Dict          # Additional options like images (base64), urls, etc.
     }
     
@@ -27,7 +26,7 @@ class TaskHandler:
         "start_time": str,        # ISO format timestamp
         "end_time": str,          # ISO format timestamp  
         "sessionId": str,         # Session ID (existing or newly created)
-        "state": str,             # "completed", "failed", "input-required"
+        "state": str,             # "completed", "failed", "input_required"
         "process_sequence": List, # List of processing steps
         "final_response": str,    # Final response or error/requirement message
         "metadata": Dict          # Additional options
@@ -60,7 +59,6 @@ class TaskHandler:
             Dict with 'valid' boolean and 'errors' list
         """
         errors = []
-        
         # Check required fields
         if 'message' not in task:
             errors.append("Required field 'message' is missing")
@@ -76,9 +74,16 @@ class TaskHandler:
                     errors.append(f"Message {i} missing 'role' field")
                 if 'content' not in msg:
                     errors.append(f"Message {i} missing 'content' field")
-                if msg.get('role') not in ['user', 'assistant', 'system', 'tool', 'model']:
-                    errors.append(f"Message {i} has invalid role: {msg.get('role')}")
-        
+                role = msg.get('role')
+                if role not in ['user', 'model']:
+                    errors.append(f"Message {i} has invalid role: {role}")
+                    errors.append(f"current role: {role}")
+                if role == 'model':
+                    # Nếu là model, kiểm tra có trường response_tool không (nếu có thì phải là string hoặc dict)
+                    if 'response_tool' in msg:
+                        if not (isinstance(msg['response_tool'], (str, dict))):
+                            errors.append(f"Message {i} with role 'model' has invalid 'response_tool' (must be string or dict)")
+
         # Validate optional fields
         if 'sessionId' in task and task['sessionId'] is not None:
             if not isinstance(task['sessionId'], str):
@@ -127,7 +132,7 @@ class TaskHandler:
             start_time: Task start time
             end_time: Task end time  
             session_id: Session identifier
-            state: Task state (completed/failed/input-required)
+            state: Task state (completed/failed/input_required)
             process_sequence: List of processing steps
             final_response: Final response text
             metadata: Optional additional metadata

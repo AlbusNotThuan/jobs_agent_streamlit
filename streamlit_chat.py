@@ -462,10 +462,7 @@ class StreamlitSkillsAnalyzerChatbot:
                                     except (ValueError, SyntaxError):
                                         # If parsing fails, display raw result
                                         pass
-                        else:
-                            # No career tool result found, but in career mode
-                            st.warning("⚠️ **Career Advisor mode:** AI chưa sử dụng career advisor tool.")
-                    
+                        
                     # Display thinking process (for both modes)
                     process_sequence = chat_result.get("process_sequence", [])
                     if process_sequence:

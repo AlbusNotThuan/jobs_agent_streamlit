@@ -9,7 +9,7 @@ from typing import Dict, List, Any, Optional
 import numpy as np
 from google import genai
 from google.genai import types
-from psycopg_query import query_database
+from .psycopg_query import query_database
 root_dir = os.path.abspath(os.path.dirname(__file__) + '/../')
 if root_dir not in sys.path:
     sys.path.append(root_dir)
