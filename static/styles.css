@@ -1,332 +1,133 @@
-/* SkillPath AI - Streamlit CSS Styles */
-/* Import fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* static/styles.css */
 
-* {
-    font-family: 'Inter', sans-serif !important;
+/* --- Base Styling --- */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f9fafb; /* A light grey background */
 }
 
+/* Remove Streamlit's default top padding to make our header stick to the top */
 .stApp {
-    background-color: #f8fafc;
+    padding-top: 0rem;
 }
 
-/* Material Design Cards - Tương thích Streamlit */
-.material-card {
+/* --- Header (Top Bar) --- */
+.header {
     background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-    margin: 1rem 0;
-}
-
-/* Skill Cards tương thích Streamlit */
-.skill-card {
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    background: white;
-    padding: 1.5rem;
-    margin: 1rem 0;
-}
-
-.material-button {
-    border-radius: 20px;
-    font-weight: 500;
-    background: #6366f1;
-    color: white;
-    border: none;
-    padding: 0.75rem 2rem;
-    cursor: pointer;
-}
-
-/* Gradient Backgrounds đơn giản */
-.gradient-bg {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 16px;
-}
-
-/* Chat Enhancements */
-.chat-container {
-    height: 400px;
-    overflow-y: auto;
-    border-radius: 16px;
-    background: white;
-    padding: 1rem;
-    margin: 1rem 0;
-}
-
-.chat-message {
-    margin: 1rem 0;
-    display: flex;
-    align-items: flex-start;
-}
-
-.chat-message.user {
-    flex-direction: row-reverse;
-}
-
-.chat-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    border-bottom: 1px solid #e5e7eb; /* Light grey border */
+    padding: 0 2rem;
+    height: 64px; /* Fixed height */
+    position: sticky; /* Makes the header stick to the top */
+    top: 0;
+    z-index: 1000; /* Ensures it's above other content */
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin: 0 0.5rem;
-    flex-shrink: 0;
 }
 
-.chat-bubble {
-    max-width: 70%;
-    padding: 0.75rem 1rem;
-    border-radius: 16px;
-    word-wrap: break-word;
-}
-
-/* Pathway Steps đơn giản */
-.pathway-step {
-    position: relative;
-    padding-left: 2rem;
-}
-
-.pathway-step::before {
-    content: '';
-    position: absolute;
-    left: 8px;
-    top: 12px;
-    width: 8px;
-    height: 8px;
-    background: #3b82f6;
-    border-radius: 50%;
-}
-
-.pathway-step::after {
-    content: '';
-    position: absolute;
-    left: 11px;
-    top: 20px;
-    width: 2px;
-    height: calc(100% - 8px);
-    background: #e5e7eb;
-}
-
-.pathway-step:last-child::after {
-    display: none;
-}
-
-/* Category Badges đơn giản */
-.category-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.tech-badge { 
-    background: #dbeafe; 
-    color: #1e40af; 
-}
-
-.design-badge { 
-    background: #fce7f3; 
-    color: #be185d; 
-}
-
-.business-badge { 
-    background: #d1fae5; 
-    color: #047857; 
-}
-
-.data-badge { 
-    background: #fef3c7; 
-    color: #92400e; 
-}
-
-.chat-avatar.ai {
-    background: #6366f1;
-    color: white;
-}
-
-.chat-avatar.user {
-    background: #3b82f6;
-    color: white;
-}
-
-.chat-bubble.ai {
-    background: #f1f5f9;
-    color: #1e293b;
-    border-top-left-radius: 4px;
-}
-
-.chat-bubble.user {
-    background: #6366f1;
-    color: white;
-    border-top-right-radius: 4px;
-}
-
-.job-tag {
-    background: linear-gradient(45deg, #10b981, #059669);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin: 0.25rem;
-    display: inline-block;
-}
-
-.salary-badge {
-    background: linear-gradient(45deg, #f59e0b, #d97706);
-    color: white;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-weight: 600;
-}
-
-/* Ẩn header và footer mặc định của Streamlit */
-header[data-testid="stHeader"] {
-    display: none;
-}
-
-.stDeployButton {
-    display: none;
-}
-
-footer {
-    display: none;
-}
-
-.stMainBlockContainer {
-    padding-top: 0;
-}
-
-/* Style cho input chat */
-.stTextInput > div > div > input {
-    border-radius: 20px;
-    border: 2px solid #e2e8f0;
-    padding: 0.75rem 1rem;
-}
-
-.stTextInput > div > div > input:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-}
-
-/* Style cho button */
-.stButton > button {
-    border-radius: 20px;
-    background: #6366f1;
-    color: white;
-    border: none;
-    font-weight: 500;
-}
-
-.stButton > button:hover {
-    background: #4f46e5;
-}
-
-/* Smooth scrolling for anchor links */
-html {
-    scroll-behavior: smooth;
-}
-
-/* Highlight chat section when accessed via button */
-#chat-section {
-    scroll-margin-top: 2rem;
-}
-
-/* Enhanced chat section styling */
-.chat-section-highlight {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(168, 85, 247, 0.05));
-    border-radius: 20px;
-    padding: 2rem;
-    margin: 1rem 0;
-    border: 2px solid rgba(99, 102, 241, 0.1);
-}
-
-/* Chat message styling fixes */
-.stChatMessage {
-    color: #1e293b !important;
-}
-
-.stChatMessage p {
-    color: #1e293b !important;
-}
-
-.stChatMessage div {
-    color: #1e293b !important;
-}
-
-/* Ensure all text in chat is dark */
-[data-testid="chatAvatarIcon-assistant"] + div,
-[data-testid="chatAvatarIcon-user"] + div {
-    color: #1e293b !important;
-}
-
-/* Fix for markdown in chat messages */
-[data-testid="stChatMessageContent"] * {
-    color: #1e293b !important;
-}
-
-/* AI Header Card Styles */
-.ai-header-card {
-    background-color: #1a202c; /* Dark background */
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    background-image: linear-gradient(#1a202c, #1a202c), 
-                      linear-gradient(90deg, #3b82f6, #8b5cf6); /* Blue to Purple gradient border */
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
-}
 .header-content {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-section {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
-.icon-container {
-    width: 48px;
-    height: 48px;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6); /* Gradient for icon background */
-    border-radius: 50%;
+
+.logo-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
-.icon-container .fas {
-    font-size: 1.25rem;
+
+.logo-icon {
     color: white;
-}
-.text-container h3 {
-    margin: 0;
-    font-weight: 600;
-    color: #f0f2f6; /* Light text color */
     font-size: 1.25rem;
-    line-height: 1.2;
 }
-.text-container p {
-    margin: 0.25rem 0 0 0;
+
+.logo-text h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827; /* Dark text */
+}
+
+.logo-text p {
+    margin: 0;
     font-size: 0.875rem;
-    color: #a0aec0; /* Lighter gray for subtitle */
+    color: #6b7280; /* Grey text */
+}
+
+.navigation {
     display: flex;
+    gap: 2.5rem;
+}
+
+.navigation a {
+    color: #4b5563; /* Medium grey text */
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease-in-out;
+}
+
+.navigation a:hover {
+    color: #6366f1; /* Purple-blue on hover */
+}
+
+
+/* --- Hero Banner --- */
+.hero-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+    padding: 5rem 2rem;
+    margin: 2rem; /* Give it some space from the header and page edges */
+    border-radius: 16px;
+}
+
+.hero-banner h2 {
+    font-size: 2.75rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero-banner p {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    margin: 0 auto 2rem auto;
+    max-width: 600px;
+}
+
+.hero-button-link {
+    text-decoration: none;
+}
+
+.hero-button {
+    background: white;
+    color: #6366f1;
+    border: none;
+    padding: 0.8rem 2.2rem;
+    border-radius: 9999px; /* A full pill shape */
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
     align-items: center;
+    gap: 0.5rem;
 }
-.status-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background-color: #34d399; /* Vibrant green */
-    border-radius: 50%;
-    margin-right: 0.5rem;
-    animation: pulse 2s infinite;
-}
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.95); }
+
+.hero-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    background-color: #f3f4f6;
 }
