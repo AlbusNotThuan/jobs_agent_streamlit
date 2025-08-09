@@ -55,6 +55,10 @@ class StreamlitSkillsAnalyzerChatbot:
             st.session_state.session_active = True
         if 'show_debug_info' not in st.session_state:
             st.session_state.show_debug_info = False
+        if 'chat_messages' not in st.session_state:
+            st.session_state.chat_messages = []  # Store rich chat messages with charts, thinking process
+        if 'charts_data' not in st.session_state:
+            st.session_state.charts_data = {}  # Store chart data persistently
 
     
 
@@ -381,108 +385,57 @@ class StreamlitSkillsAnalyzerChatbot:
             # Handle the structured response
             if not isinstance(chat_result, dict):
                 clean_response = str(chat_result)
+                message_data = {
+                    'type': 'assistant',
+                    'content': clean_response,
+                    'timestamp': datetime.now().isoformat(),
+                    'thinking_process': None,
+                    'charts': [],
+                    'debug_info': debug_output if st.session_state.get('show_debug_info', True) else None
+                }
             else:
                 if not chat_result.get("success", False):
                     clean_response = chat_result.get("final_response", "❌ Error processing request")
                     if "error" in chat_result:
                         clean_response += f"\nError details: {chat_result['error']}"
+                    
+                    message_data = {
+                        'type': 'assistant',
+                        'content': clean_response,
+                        'timestamp': datetime.now().isoformat(),
+                        'thinking_process': None,
+                        'charts': [],
+                        'debug_info': debug_output if st.session_state.get('show_debug_info', True) else None,
+                        'error': True
+                    }
                 else:
                     clean_response = chat_result.get("final_response", "🤖 No response generated")
                     
-                    # Handle career advisor mode responses
-                    if chat_result.get("career_mode", False) or st.session_state.career_advisor_mode:
-                        # Check if response contains career advisor tool results
-                        process_sequence = chat_result.get("process_sequence", [])
-                        has_career_tool_result = any(
-                            step.get("type") == "tool_result" and step.get("tool_name") == "career_advisor_tool"
-                            for step in process_sequence
-                        )
-                        
-                        if has_career_tool_result:
-                            st.success("✅ **Career Advisor đã phân tích xong:**")
-                            
-                            # Find career tool result
-                            for step in process_sequence:
-                                if (step.get("type") == "tool_result" and 
-                                    step.get("tool_name") == "career_advisor_tool" and 
-                                    step.get("success", False)):
-                                    
-                                    # Try to parse career advisor result
-                                    try:
-                                        import ast
-                                        tool_result = step.get("result", "")
-                                        
-                                        # If result is a string representation of dict, parse it
-                                        if isinstance(tool_result, str) and tool_result.startswith("{"):
-                                            career_result = ast.literal_eval(tool_result)
-                                            
-                                            # Extract final response from career advisor
-                                            career_response = career_result.get("final_response", "")
-                                            
-                                            # Try to parse JSON from career response
-                                            if career_response:
-                                                try:
-                                                    import json
-                                                    json_response = json.loads(career_response)
-                                                    
-                                                    if json_response.get("status") == "input_required":
-                                                        st.info("💡 **Cần thêm thông tin:**")
-                                                        st.write(json_response.get("message", ""))
-                                                        if json_response.get("next_questions"):
-                                                            st.markdown("**Gợi ý câu hỏi:**")
-                                                            for q in json_response["next_questions"]:
-                                                                st.markdown(f"• {q}")
-                                                    
-                                                    elif json_response.get("career_recommendations"):
-                                                        recs = json_response["career_recommendations"]
-                                                        
-                                                        if recs.get("personality_analysis"):
-                                                            st.markdown("**🧠 Phân tích tính cách:**")
-                                                            st.write(recs["personality_analysis"])
-                                                        
-                                                        if recs.get("recommended_skills"):
-                                                            st.markdown("**🛠️ Kỹ năng đề xuất:**")
-                                                            for skill in recs["recommended_skills"][:5]:
-                                                                st.markdown(f"• {skill}")
-                                                        
-                                                        if recs.get("career_paths"):
-                                                            st.markdown("**💼 Lộ trình nghề nghiệp:**")
-                                                            for path in recs["career_paths"][:3]:
-                                                                st.markdown(f"• {path}")
-                                                        
-                                                        if recs.get("market_insights"):
-                                                            st.markdown("**📊 Thông tin thị trường:**")
-                                                            for insight in recs["market_insights"][:3]:
-                                                                st.markdown(f"• {insight}")
-                                                
-                                                except json.JSONDecodeError:
-                                                    # Display as raw text if not JSON
-                                                    pass
-                                    
-                                    except (ValueError, SyntaxError):
-                                        # If parsing fails, display raw result
-                                        pass
-                        
-                    # Display thinking process (for both modes)
-                    process_sequence = chat_result.get("process_sequence", [])
-                    if process_sequence:
-                        process_title = "🎯 **Career Analysis Process**" if st.session_state.career_advisor_mode else "🧠 **Thinking Process**"
-                        with st.expander(f"{process_title} ({len(process_sequence)} steps)", expanded=False):
-                            self._display_process_sequence(process_sequence)
-
-                    # Check for chart data in tool results (only for skills analyzer mode)
-                    if not st.session_state.career_advisor_mode:
-                        self._check_and_display_charts(chat_result)
+                    # Prepare message data structure
+                    message_data = {
+                        'type': 'assistant',
+                        'content': clean_response,
+                        'timestamp': datetime.now().isoformat(),
+                        'thinking_process': chat_result.get("process_sequence", []),
+                        'charts': [],
+                        'debug_info': debug_output if st.session_state.get('show_debug_info', True) else None,
+                        'career_mode': chat_result.get("career_mode", False) or st.session_state.career_advisor_mode
+                    }
+                    
+                    # Extract and store chart data
+                    charts_data = self._extract_charts_from_result(chat_result)
+                    message_data['charts'] = charts_data
+                    
+                    # Store charts in persistent storage
+                    for chart in charts_data:
+                        chart_id = f"chart_{len(st.session_state.chat_messages)}_{chart['title'].replace(' ', '_')}"
+                        st.session_state.charts_data[chart_id] = chart
             
-            # --- CHANGE 3: The "Raw Backend Response" expander has been completely removed. ---
-
-            # --- CHANGE 4: This block correctly remains inside the debug 'if' condition. ---
-            # It will only appear when the "Show Debug Info" checkbox is ticked.
-            if st.session_state.get('show_debug_info', True) and debug_output.strip():
-                with st.expander("🔍 **Debug Information** (Console Output)", expanded=False):
-                    self._display_debug_output(debug_output)
+            # Add assistant message to chat messages
+            # Note: User message is already added in main() before calling this function
+            st.session_state.chat_messages.append(message_data)
             
-            # Store conversation in Streamlit session state (only clean response)
+            # Store in legacy conversation history for backward compatibility
             st.session_state.conversation_history.append(f"User: {user_message}")
             st.session_state.conversation_history.append(f"Assistant: {clean_response}")
             
@@ -490,9 +443,72 @@ class StreamlitSkillsAnalyzerChatbot:
             
         except Exception as e:
             error_msg = f"❌ Error processing your request: {str(e)}"
+            
+            # Store error message
+            error_message_data = {
+                'type': 'assistant',
+                'content': error_msg,
+                'timestamp': datetime.now().isoformat(),
+                'thinking_process': None,
+                'charts': [],
+                'debug_info': None,
+                'error': True
+            }
+            
+            # Note: User message is already added in main() before calling this function
+            st.session_state.chat_messages.append(error_message_data)
+            
             st.session_state.conversation_history.append(f"User: {user_message}")
             st.session_state.conversation_history.append(f"Assistant: {error_msg}")
+            
             return error_msg
+    
+    def _extract_charts_from_result(self, chat_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Extract chart data from chat result for persistent storage.
+        
+        Args:
+            chat_result (Dict[str, Any]): Chat result containing process sequence
+            
+        Returns:
+            List[Dict[str, Any]]: List of chart data dictionaries
+        """
+        charts = []
+        try:
+            process_sequence = chat_result.get("process_sequence", [])
+            
+            for step in process_sequence:
+                if step.get("type") == "tool_result" and step.get("success"):
+                    result_str = step.get("result")
+                    
+                    # Parse tool result string
+                    if isinstance(result_str, str):
+                        try:
+                            import ast
+                            result = ast.literal_eval(result_str)
+                        except (ValueError, SyntaxError):
+                            continue
+                    else:
+                        result = result_str
+                    
+                    # Check if result contains chart data
+                    if (isinstance(result, dict) and 
+                        result.get("chart_data") is not None and 
+                        result.get("chart_type") is not None):
+                        
+                        chart_data = {
+                            'chart_data': result.get("chart_data"),
+                            'chart_type': result.get("chart_type", "line_chart"),
+                            'summary': result.get("summary", {}),
+                            'title': result.get("summary", {}).get("analysis_type", "Analysis Chart"),
+                            'timestamp': datetime.now().isoformat()
+                        }
+                        charts.append(chart_data)
+                        
+        except Exception as e:
+            print(f"[STREAMLIT_ERROR] Error extracting charts: {e}")
+            
+        return charts
     
     def _check_and_display_charts(self, chat_result: Dict[str, Any]) -> None:
         """
@@ -539,37 +555,99 @@ class StreamlitSkillsAnalyzerChatbot:
     def _display_streamlit_chart(self, result: Dict[str, Any]) -> None:
         """
         Displays a chart with a dynamic title based on the analysis type.
-        This version correctly unpacks data serialized with pandas' .to_dict('split').
+        Supports both line charts (for trends) and bar charts (for distributions).
         """
         try:
             chart_data_dict = result.get("chart_data")
+            chart_type = result.get("chart_type", "line_chart")
             
-            # --- START OF THE FIX ---
-            # 1. Get the summary dictionary provided by the tool.
+            # Get the summary dictionary provided by the tool
             summary = result.get("summary", {})
-            # 2. Get the specific analysis type from the summary. Default to "Analysis Trend".
             analysis_type = summary.get("analysis_type", "Analysis Trend")
-            # --- END OF THE FIX ---
 
-            # Validation: Check if chart data exists.
+            # Validation: Check if chart data exists
             if chart_data_dict is None:
                 st.warning("📊 No chart data was received from the tool.")
                 return
 
-            # Conversion: Reconstruct the DataFrame from the clean dictionary.
-            chart_data = pd.DataFrame(
-                chart_data_dict['data'],
-                index=pd.to_datetime(chart_data_dict['index']),
-                columns=chart_data_dict['columns']
-            )
-
-            # --- USE THE DYNAMIC TITLE ---
-            # 3. Display the chart with the dynamic title from the summary.
-            st.subheader(f"📈 {analysis_type} (Last 4 Weeks)")
-            st.line_chart(chart_data)
+            # Handle different chart types
+            if chart_type == "bar_chart":
+                # Bar chart data comes as a simple dictionary {label: value}
+                st.subheader(f"📊 {analysis_type} (Last 4 Weeks)")
+                
+                # Convert dictionary to DataFrame for bar chart
+                if isinstance(chart_data_dict, dict):
+                    # Create DataFrame from the dictionary
+                    chart_df = pd.DataFrame(
+                        list(chart_data_dict.items()), 
+                        columns=['Category', 'Frequency']
+                    ).set_index('Category')
+                    
+                    # Display the bar chart
+                    st.bar_chart(
+                        chart_df, 
+                        height=400,
+                        use_container_width=True
+                    )
+                    
+                    # Display summary information
+                    if summary:
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            if "total_mentions" in summary:
+                                st.metric("Total Mentions", summary["total_mentions"])
+                            elif "total_postings" in summary:
+                                st.metric("Total Postings", summary["total_postings"])
+                        with col2:
+                            if "top_skill" in summary and summary["top_skill"]:
+                                st.metric("Top Skill", summary["top_skill"])
+                            elif "top_role" in summary and summary["top_role"]:
+                                st.metric("Top Role", summary["top_role"])
+                        with col3:
+                            if "skills_count" in summary:
+                                st.metric("Skills Analyzed", summary["skills_count"])
+                            elif "roles_count" in summary:
+                                st.metric("Roles Analyzed", summary["roles_count"])
+                
+                else:
+                    st.warning("📊 Bar chart data format is not supported.")
+                    
+            elif chart_type == "line_chart":
+                # Line chart data comes as pandas split format
+                st.subheader(f"📈 {analysis_type} (Last 4 Weeks)")
+                
+                # Reconstruct the DataFrame from the split dictionary
+                chart_data = pd.DataFrame(
+                    chart_data_dict['data'],
+                    index=pd.to_datetime(chart_data_dict['index']),
+                    columns=chart_data_dict['columns']
+                )
+                
+                # Display the line chart
+                st.line_chart(chart_data, height=400)
+                
+                # Display summary information
+                if summary:
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        if "total_mentions" in summary:
+                            st.metric("Total Mentions", summary["total_mentions"])
+                        elif "total_postings" in summary:
+                            st.metric("Total Postings", summary["total_postings"])
+                    with col2:
+                        if "peak_skill" in summary and summary["peak_skill"]:
+                            st.metric("Peak Skill", summary["peak_skill"])
+                        elif "peak_role" in summary and summary["peak_role"]:
+                            st.metric("Peak Role", summary["peak_role"])
+                    with col3:
+                        if "items_analyzed" in summary:
+                            st.metric("Items Analyzed", len(summary["items_analyzed"]))
+            
+            else:
+                st.warning(f"📊 Chart type '{chart_type}' is not supported.")
 
         except Exception as e:
-            # Basic error handling in case the reconstruction or display fails.
+            # Basic error handling in case the reconstruction or display fails
             st.error(f"❌ Failed to display the chart. Error: {e}")
             print(f"[STREAMLIT_ERROR] A failure occurred in _display_streamlit_chart: {e}")
     
@@ -774,6 +852,8 @@ class StreamlitSkillsAnalyzerChatbot:
         """Start a new chat session"""
         self.chatbot.new_chat()
         st.session_state.conversation_history = []
+        st.session_state.chat_messages = []
+        st.session_state.charts_data = {}
         st.session_state.session_active = True
     
     def get_session_stats(self) -> dict:
@@ -789,21 +869,162 @@ class StreamlitSkillsAnalyzerChatbot:
         self.chatbot.set_generation_preset(preset)
     
     def display_conversation_with_debug(self) -> None:
-        """Display conversation history with enhanced formatting"""
-        for i, message in enumerate(st.session_state.conversation_history):
-            if message.startswith("User: "):
+        """Display conversation history with enhanced formatting using rich message format"""
+        if not st.session_state.chat_messages:
+            return
+            
+        for i, message in enumerate(st.session_state.chat_messages):
+            if message['type'] == 'user':
                 with st.chat_message("user"):
-                    st.write(message[6:])
-            elif message.startswith("Assistant: "):
-                with st.chat_message("assistant"):
-                    # Get clean response content
-                    response_text = message[11:]
+                    st.write(message['content'])
                     
-                    # Display the clean response (debug info is shown separately)
-                    if response_text.strip():
-                        st.write(response_text)
+            elif message['type'] == 'assistant':
+                with st.chat_message("assistant"):
+                    # Display main content
+                    if message.get('error'):
+                        st.error(message['content'])
                     else:
-                        st.write("_No response content_")
+                        st.write(message['content'])
+                    
+                    # Handle career advisor mode responses  
+                    if message.get('career_mode') and message.get('thinking_process'):
+                        self._display_career_advisor_results(message['thinking_process'])
+                    
+                    # Display thinking process
+                    if message.get('thinking_process'):
+                        process_title = "🎯 **Career Analysis Process**" if message.get('career_mode') else "🧠 **Thinking Process**"
+                        with st.expander(f"{process_title} ({len(message['thinking_process'])} steps)", expanded=False):
+                            self._display_process_sequence(message['thinking_process'])
+                    
+                    # Display charts
+                    if message.get('charts'):
+                        for chart_data in message['charts']:
+                            self._display_persistent_chart(chart_data)
+                    
+                    # Display debug info if enabled
+                    if st.session_state.get('show_debug_info', True) and message.get('debug_info'):
+                        with st.expander("🔍 **Debug Information** (Console Output)", expanded=False):
+                            self._display_debug_output(message['debug_info'])
+    
+    def _display_career_advisor_results(self, thinking_process: List[Dict[str, Any]]) -> None:
+        """
+        Display career advisor results from thinking process.
+        
+        Args:
+            thinking_process (List[Dict[str, Any]]): Process sequence from chatbot
+        """
+        # Check if response contains career advisor tool results
+        has_career_tool_result = any(
+            step.get("type") == "tool_result" and step.get("tool_name") == "career_advisor_tool"
+            for step in thinking_process
+        )
+        
+        if has_career_tool_result:
+            st.success("✅ **Career Advisor đã phân tích xong:**")
+            
+            # Find career tool result
+            for step in thinking_process:
+                if (step.get("type") == "tool_result" and 
+                    step.get("tool_name") == "career_advisor_tool" and 
+                    step.get("success", False)):
+                    
+                    # Try to parse career advisor result
+                    try:
+                        import ast
+                        tool_result = step.get("result", "")
+                        
+                        # If result is a string representation of dict, parse it
+                        if isinstance(tool_result, str) and tool_result.startswith("{"):
+                            career_result = ast.literal_eval(tool_result)
+                            
+                            # Extract final response from career advisor
+                            career_response = career_result.get("final_response", "")
+                            
+                            # Try to parse JSON from career response
+                            if career_response:
+                                try:
+                                    import json
+                                    json_response = json.loads(career_response)
+                                    
+                                    if json_response.get("status") == "input_required":
+                                        st.info("💡 **Cần thêm thông tin:**")
+                                        st.write(json_response.get("message", ""))
+                                        if json_response.get("next_questions"):
+                                            st.markdown("**Gợi ý câu hỏi:**")
+                                            for q in json_response["next_questions"]:
+                                                st.markdown(f"• {q}")
+                                    
+                                    elif json_response.get("career_recommendations"):
+                                        recs = json_response["career_recommendations"]
+                                        
+                                        if recs.get("personality_analysis"):
+                                            st.markdown("**🧠 Phân tích tính cách:**")
+                                            st.write(recs["personality_analysis"])
+                                        
+                                        if recs.get("recommended_skills"):
+                                            st.markdown("**🛠️ Kỹ năng đề xuất:**")
+                                            for skill in recs["recommended_skills"][:5]:
+                                                st.markdown(f"• {skill}")
+                                        
+                                        if recs.get("career_paths"):
+                                            st.markdown("**💼 Lộ trình nghề nghiệp:**")
+                                            for path in recs["career_paths"][:3]:
+                                                st.markdown(f"• {path}")
+                                        
+                                        if recs.get("market_insights"):
+                                            st.markdown("**📊 Thông tin thị trường:**")
+                                            for insight in recs["market_insights"][:3]:
+                                                st.markdown(f"• {insight}")
+                                
+                                except json.JSONDecodeError:
+                                    # Display as raw text if not JSON
+                                    pass
+                    
+                    except (ValueError, SyntaxError):
+                        # If parsing fails, display raw result
+                        pass
+    
+    def _display_persistent_chart(self, chart_data: Dict[str, Any]) -> None:
+        """
+        Display a chart from persistent chart data.
+        
+        Args:
+            chart_data (Dict[str, Any]): Chart data dictionary
+        """
+        try:
+            chart_data_dict = chart_data.get("chart_data")
+            chart_type = chart_data.get("chart_type", "line_chart")
+            title = chart_data.get("title", "Analysis Chart")
+            summary = chart_data.get("summary", {})
+            analysis_type = summary.get("analysis_type", "Analysis Trend")
+
+            # Validation: Check if chart data exists
+            if chart_data_dict is None:
+                st.warning("⚠️ No chart data available to display")
+                return
+
+            # Handle different chart types
+            if chart_type == "bar_chart":
+                st.markdown(f"**📊 {title}**")
+                
+                # Convert data to format suitable for Streamlit
+                data_for_chart = {}
+                for key, value in chart_data_dict.items():
+                    data_for_chart[key] = float(value)
+                    
+                st.bar_chart(data_for_chart)
+                
+            elif chart_type == "line_chart":
+                st.markdown(f"**📈 {title}**")
+                st.line_chart(chart_data_dict)
+            
+            else:
+                st.warning(f"⚠️ Unsupported chart type: {chart_type}")
+
+        except Exception as e:
+            # Basic error handling in case the reconstruction or display fails
+            st.error(f"❌ Failed to display the chart. Error: {e}")
+            print(f"[STREAMLIT_ERROR] A failure occurred in _display_persistent_chart: {e}")
     
     def _display_structured_response(self, response_text: str) -> None:
         """Display structured response with different sections"""
@@ -1062,6 +1283,8 @@ I can:
         
         if st.button("🗑️ Clear History"):
             st.session_state.conversation_history = []
+            st.session_state.chat_messages = []
+            st.session_state.charts_data = {}
             st.session_state.session_active = True
             st.rerun()
 
@@ -1082,27 +1305,36 @@ I can:
     if st.session_state.session_active:
         # Dynamic placeholder based on mode
         if st.session_state.career_advisor_mode:
-            placeholder = "Example: 'I'm good at math, love technology, want career advice...'"
+            placeholder = "Ví dụ: 'Tôi giỏi toán, thích công nghệ, muốn tư vấn nghề nghiệp phù hợp...'"
         else:
             placeholder = "Ask me about job market skills and trends..."
             
         user_input = st.chat_input(placeholder)
         
         if user_input:
-            # Display user message
+            # Immediately add user message to session state and display it
+            user_message_data = {
+                'type': 'user',
+                'content': user_input,
+                'timestamp': datetime.now().isoformat()
+            }
+            st.session_state.chat_messages.append(user_message_data)
+            
+            # Display the user message immediately
             with st.chat_message("user"):
                 st.write(user_input)
             
-            # Process and display assistant response
-            with st.chat_message("assistant"):
-                with st.spinner("🤔 Analyzing your request..."):
-                    response = st.session_state.chatbot.chat(user_input)
+            # Show processing message and process AI response
+            with st.status("🤔 Processing your request...", expanded=False) as status:
+                st.write("🧠 AI is thinking...")
                 
-                # Display the clean response (debug info already shown separately)
-                if response and response.strip():
-                    st.write(response)
-                else:
-                    st.write("_No response generated_")
+                # Process the request (this will add the assistant message)
+                response = st.session_state.chatbot.chat(user_input)
+                
+                status.update(label="✅ Request completed!", state="complete", expanded=False)
+            
+            # Trigger rerun to display the new AI response
+            st.rerun()
     else:
         st.info("Session ended. Click 'New Chat' to start a new conversation.")
 

@@ -36,8 +36,13 @@ from tools.toolbox import (
     plot_skill_trend,
     plot_job_trend,
     create_dummy_line_chart,
+    create_dummy_bar_chart,
     get_top_job_expertises,
     get_top_skills,
+    plot_skills_bar_chart,
+    plot_job_roles_bar_chart,
+    create_top_skills_bar_chart,
+    create_top_jobs_bar_chart,
 )
 # Local imports
 from .message_manager import MessageManager
@@ -150,7 +155,12 @@ class SkillsAnalyzerChatbot:
                 query_database,
                 plot_skill_trend,
                 plot_job_trend,
+                plot_skills_bar_chart,
+                plot_job_roles_bar_chart,
+                create_top_skills_bar_chart,
+                create_top_jobs_bar_chart,
                 create_dummy_line_chart,
+                create_dummy_bar_chart,
                 get_top_job_expertises,
                 get_top_skills,
                 recommend_jobs
@@ -167,7 +177,12 @@ class SkillsAnalyzerChatbot:
                 'query_database': query_database,
                 'plot_skill_trend': plot_skill_trend,
                 'plot_job_trend': plot_job_trend,
+                'plot_skills_bar_chart': plot_skills_bar_chart,
+                'plot_job_roles_bar_chart': plot_job_roles_bar_chart,
+                'create_top_skills_bar_chart': create_top_skills_bar_chart,
+                'create_top_jobs_bar_chart': create_top_jobs_bar_chart,
                 'create_dummy_line_chart': create_dummy_line_chart,
+                'create_dummy_bar_chart': create_dummy_bar_chart,
                 'get_top_job_expertises': get_top_job_expertises,
                 'get_top_skills': get_top_skills,
                 'recommend_jobs': recommend_jobs
