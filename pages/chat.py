@@ -37,13 +37,11 @@ except ImportError as e:
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
-API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 class StreamlitSkillsAnalyzerChatbot:
     def __init__(self):
-        if not API_KEY:
-            st.error("❌ GEMINI_API_KEY not found in environment variables")
-            st.stop()
+
         
         # Initialize the main chatbot class with verbose mode for detailed output
         self.chatbot = SkillsAnalyzerChatbot(verbose=True)
@@ -880,7 +878,18 @@ class StreamlitSkillsAnalyzerChatbot:
                     
             elif message['type'] == 'assistant':
                 with st.chat_message("assistant"):
-                    # Display main content
+                    # Display thinking process FIRST (before response)
+                    if message.get('thinking_process'):
+                        process_title = "🎯 **Career Analysis Process**" if message.get('career_mode') else "🧠 **Thinking Process**"
+                        with st.expander(f"{process_title} ({len(message['thinking_process'])} steps)", expanded=st.session_state.get('show_debug_info', False)):
+                            self._display_process_sequence(message['thinking_process'])
+                    
+                    # Display debug info if enabled
+                    if st.session_state.get('show_debug_info', True) and message.get('debug_info'):
+                        with st.expander("🔍 **Debug Information** (Console Output)", expanded=False):
+                            self._display_debug_output(message['debug_info'])
+
+                    # Display main content (AI response)
                     if message.get('error'):
                         st.error(message['content'])
                     else:
@@ -890,21 +899,12 @@ class StreamlitSkillsAnalyzerChatbot:
                     if message.get('career_mode') and message.get('thinking_process'):
                         self._display_career_advisor_results(message['thinking_process'])
                     
-                    # Display thinking process
-                    if message.get('thinking_process'):
-                        process_title = "🎯 **Career Analysis Process**" if message.get('career_mode') else "🧠 **Thinking Process**"
-                        with st.expander(f"{process_title} ({len(message['thinking_process'])} steps)", expanded=False):
-                            self._display_process_sequence(message['thinking_process'])
-                    
                     # Display charts
                     if message.get('charts'):
                         for chart_data in message['charts']:
                             self._display_persistent_chart(chart_data)
                     
-                    # Display debug info if enabled
-                    if st.session_state.get('show_debug_info', True) and message.get('debug_info'):
-                        with st.expander("🔍 **Debug Information** (Console Output)", expanded=False):
-                            self._display_debug_output(message['debug_info'])
+                    
     
     def _display_career_advisor_results(self, thinking_process: List[Dict[str, Any]]) -> None:
         """

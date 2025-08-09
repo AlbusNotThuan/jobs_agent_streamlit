@@ -47,11 +47,12 @@ from tools.toolbox import (
 # Local imports
 from .message_manager import MessageManager
 
-
+# Add parent directory to path for imports
+from utils.api_key_manager import get_api_key_manager
 
 # Load environment variables
 load_dotenv()
-API_KEY = os.getenv("GEMINI_API_KEY")
+# API_KEY = os.getenv("GEMINI_API_KEY")  # Replaced with API key manager
 
 
 class SkillsAnalyzerChatbot:
@@ -73,11 +74,16 @@ class SkillsAnalyzerChatbot:
         Returns:
             None
         """
-        # Initialize Gemini client
-        if not API_KEY:
-            raise ValueError("GEMINI_API_KEY environment variable is not set")
+        # Initialize API key manager
+        try:
+            self.api_key_manager = get_api_key_manager()
+            current_key = self.api_key_manager.get_current_key()
+            print(f"[API_MANAGER] Using API key index: {self.api_key_manager.current_index}")
+        except Exception as e:
+            raise ValueError(f"Failed to initialize API key manager: {e}")
         
-        self.client = genai.Client(api_key=API_KEY)
+        # Initialize Gemini client
+        self.client = genai.Client(api_key=current_key)
         
         # Initialize message manager
         self.message_manager = MessageManager(session_id=session_id)
@@ -204,6 +210,62 @@ class SkillsAnalyzerChatbot:
             # Setup basic tools only - empty list, AI will respond directly
             self.available_tools = []
             self.tool_functions = {}
+    
+    def _handle_api_error_and_retry(self, error, operation_name: str = "API call"):
+        """
+        Handle API errors and retry with next key if appropriate.
+        
+        Args:
+            error: The exception that occurred
+            operation_name: Name of the operation for logging
+            
+        Returns:
+            bool: True if should retry with new key, False if error is non-retryable
+        """
+        error_str = str(error).lower()
+        print(f"[API_ERROR] {operation_name} failed: {error}")
+        
+        # Check for retryable errors
+        retryable_indicators = [
+            '400', 'bad request','500', 'internal', 'timeout', 'rate limit', 'quota', 
+            'unavailable', '503', '429', 'server error'
+        ]
+        
+        if any(indicator in error_str for indicator in retryable_indicators):
+            try:
+                next_key = self.api_key_manager.next_key()
+                self.client = genai.Client(api_key=next_key)
+                print(f"[API_MANAGER] Switched to API key index: {self.api_key_manager.current_index}")
+                return True
+            except Exception as switch_error:
+                print(f"[API_ERROR] Failed to switch API key: {switch_error}")
+                return False
+        
+        print(f"[API_ERROR] Non-retryable error: {error}")
+        return False
+    
+    def _safe_api_call(self, api_function, *args, **kwargs):
+        """
+        Execute API call with automatic key rotation on retryable errors.
+        Will rotate through all API keys up to 100 attempts, looping if needed.
+        """
+        last_exception = None
+        max_attempts = 100
+        for attempt in range(max_attempts):
+            try:
+                return api_function(*args, **kwargs)
+            except Exception as e:
+                last_exception = e
+                operation_name = f"{api_function.__name__ if hasattr(api_function, '__name__') else 'API call'} (attempt {attempt + 1})"
+                
+                # Try to handle error and retry
+                if not self._handle_api_error_and_retry(e, operation_name):
+                    # Non-retryable error, stop trying
+                    break
+                
+                # Continue to next iteration for retry
+                
+        raise last_exception
     
     # =============================================================================
     # PUBLIC INTERFACE METHODS
@@ -340,8 +402,9 @@ CRITICAL: get_career_advice tool sessionId handling:
             
             # Main loop to handle tool calling
             while True:
-                # Generate response with thinking
-                response = self.client.models.generate_content(
+                # Generate response with thinking using safe API call
+                response = self._safe_api_call(
+                    self.client.models.generate_content,
                     model="gemini-2.5-flash",
                     contents=conversation_history,
                     config=config
