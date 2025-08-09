@@ -7,3 +7,4 @@ __pycache__/
 plots/
 conversations/
 *.csv
+key.txt

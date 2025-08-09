@@ -18,9 +18,9 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.psycopg_query import query_database
+from .tools.psycopg_query import query_database
 from .tools.embedding_tools import get_similar_jobs_by_embedding
-from .agent_recommender.task_handler import TaskHandler
+from .task_handler import TaskHandler
 from .utils.api_key_manager import get_api_key_manager
 
 # Load environment variables
@@ -36,7 +36,7 @@ class UnifiedCareerAdvisor:
     for both interactive use and external agent integration.
     """
     
-    def __init__(self, conversations_dir: str = "conversations"):
+    def __init__(self, conversations_dir: str = None):
         """Initialize the unified career advisor agent."""
         try:
             # Initialize API key manager
@@ -177,9 +177,10 @@ class UnifiedCareerAdvisor:
         try:            
             # Define the response_to_agent tool
             def response_to_agent(
-                sessionId: str,
-                state: str, 
-                final_response: str,
+                status: str,
+                data: Dict[str, Any],
+                analysis: Dict[str, Any],
+                sessionId: Optional[str] = None,
                 process_sequence: Optional[List[Dict[str, Any]]] = None,
                 metadata: Optional[Dict[str, Any]] = None
             ) -> Dict[str, Any]:
@@ -195,42 +196,54 @@ class UnifiedCareerAdvisor:
                 or enhance reasoning. Only call when ready to provide final response.
                 
                 Args:
-                    sessionId: Session ID for the conversation
-                    state: Must be "completed", "failed", or "input_required"
-                    final_response: The main response content (JSON string for structured responses)
+                    status: Must be "completed", "failed", or "input_required"
+                    data: The data section following the unified format structure
+                    analysis: The analysis section with reasoning, confidence_score, criteria_used, strengths, weaknesses, market_context
+                    sessionId: Session ID for the conversation (optional)
                     process_sequence: List of processing steps taken (optional)
                     metadata: Additional metadata (optional)
                     
                 Returns:
-                    Standardized task response format
+                    Unified response format with status, data, and analysis
                 """
                 print(f"[TOOL_CALL] response_to_agent invoked")
+                print(f"[TOOL_INPUT] status: {status}")
+                print(f"[TOOL_INPUT] data keys: {list(data.keys()) if data else 'None'}")
+                print(f"[TOOL_INPUT] analysis keys: {list(analysis.keys()) if analysis else 'None'}")
                 print(f"[TOOL_INPUT] sessionId: {sessionId}")
-                print(f"[TOOL_INPUT] state: {state}")
-                print(f"[TOOL_INPUT] final_response length: {len(final_response)} chars")
-                print(f"[TOOL_INPUT] final_response preview: {final_response[:200]}...")
                 print(f"[TOOL_INPUT] process_sequence: {len(process_sequence) if process_sequence else 0} steps")
                 print(f"[TOOL_INPUT] metadata: {list(metadata.keys()) if metadata else 'None'}")
                 
-                if state not in ["completed", "failed", "input_required"]:
-                    error_msg = f"Invalid state: {state}. Must be 'completed', 'failed', or 'input_required'"
+                if status not in ["completed", "failed", "input_required"]:
+                    error_msg = f"Invalid status: {status}. Must be 'completed', 'failed', or 'input_required'"
                     print(f"[TOOL_ERROR] {error_msg}")
                     raise ValueError(error_msg)
                 
-                end_time = datetime.now()
-                start_time = getattr(self, '_task_start_time', end_time)
+                # Validate analysis structure
+                required_analysis_fields = ["reasoning", "confidence_score", "criteria_used", "strengths", "weaknesses", "market_context"]
+                for field in required_analysis_fields:
+                    if field not in analysis:
+                        error_msg = f"Missing required analysis field: {field}"
+                        print(f"[TOOL_ERROR] {error_msg}")
+                        raise ValueError(error_msg)
                 
+                # Build the unified response format
                 result = {
-                    "start_time": start_time.isoformat(),
-                    "end_time": end_time.isoformat(), 
-                    "sessionId": sessionId,
-                    "state": state,
-                    "process_sequence": process_sequence or [],
-                    "final_response": final_response,
-                    "metadata": metadata or {}
+                    "status": status,
+                    "data": data,
+                    "analysis": analysis
                 }
                 
-                print(f"[TOOL_OUTPUT] response_to_agent result: {list(result.keys())}")
+                # Add optional metadata for tracking
+                if sessionId or process_sequence or metadata:
+                    result["_metadata"] = {
+                        "sessionId": sessionId,
+                        "process_sequence": process_sequence or [],
+                        "additional_metadata": metadata or {},
+                        "timestamp": datetime.now().isoformat()
+                    }
+                
+                print(f"[TOOL_OUTPUT] response_to_agent result with status: {result['status']}")
                 print(f"[TOOL_SUCCESS] response_to_agent executed successfully")
                 return result
             
@@ -291,132 +304,284 @@ class UnifiedCareerAdvisor:
         """
         Main function to process career counseling tasks.
         
-        This is the unified entry point that handles the standardized input/output format.
-        
         Args:
             task: Input task with sessionId, message, and metadata
             
         Returns:
-            Standardized output task with career guidance (only when response_to_agent tool is used)
+            Unified format response: {status, data, analysis, _metadata}
         """
         start_time = datetime.now()
-        self._task_start_time = start_time  # Store for response_to_agent tool
-        self._current_tool_history = []  # Reset tool history for new task
+        self._task_start_time = start_time
+        self._current_tool_history = []
         
         print(f"\n[PROCESS_CAREER_TASK] Starting at {start_time.isoformat()}")
-        print(f"[INPUT_VALIDATION] Received task with keys: {list(task.keys())}")
         
         try:
             # Validate input
-            print(f"[STEP_1] Input validation...")
             validation = self.task_handler.validate_input_task(task)
-            print(f"[VALIDATION_RESULT] Valid: {validation['valid']}")
             if not validation['valid']:
-                print(f"[VALIDATION_ERRORS] {validation['errors']}")
-                return self.task_handler.create_failed_task(
-                    start_time=start_time,
-                    reason=f"Invalid input: {'; '.join(validation['errors'])}",
-                    metadata={"validation_errors": validation['errors']}
-                )
+                return {
+                    "status": "failed",
+                    "data": {
+                        "error_type": "VALIDATION_ERROR",
+                        "error_message": f"Invalid input: {'; '.join(validation['errors'])}",
+                        "fallback_guidance": "Please provide valid task format with message field",
+                        "suggested_action": "Check input format and retry"
+                    },
+                    "analysis": {
+                        "reasoning": "Input validation failed - required fields missing or invalid",
+                        "confidence_score": 0.0,
+                        "criteria_used": ["input_validation"],
+                        "strengths": [],
+                        "weaknesses": ["Invalid input format"],
+                        "market_context": "Cannot process without valid input"
+                    },
+                    "_metadata": {
+                        "sessionId": task.get('sessionId'),
+                        "process_sequence": [],
+                        "timestamp": start_time.isoformat(),
+                        "processing_time": 0.0
+                    }
+                }
             
             # Extract components
-            print(f"[STEP_2] Extracting task components...")
             session_id = task.get('sessionId')
             messages = task['message']
             metadata = task.get('metadata', {})
-            print(f"[COMPONENTS] SessionId: {session_id}, Messages: {len(messages)}, Metadata keys: {list(metadata.keys())}")
             
             # Session management
-            print(f"[STEP_3] Session management...")
             if session_id:
-                print(f"[SESSION_CHECK] Checking if session '{session_id}' exists...")
                 if not self.task_handler.check_session_exists(session_id):
-                    print(f"[SESSION_ERROR] Session '{session_id}' not found")
-                    return self.task_handler.create_failed_task(
-                        start_time=start_time,
-                        reason=f"Session '{session_id}' not found",
-                        session_id=session_id
-                    )
-                print(f"[SESSION_FOUND] Loading existing session '{session_id}'")
+                    return {
+                        "status": "failed",
+                        "data": {
+                            "error_type": "SESSION_ERROR",
+                            "error_message": f"Session '{session_id}' not found",
+                            "fallback_guidance": "Create new session or use valid session ID",
+                            "suggested_action": "Start new conversation or check session ID"
+                        },
+                        "analysis": {
+                            "reasoning": f"Requested session '{session_id}' does not exist",
+                            "confidence_score": 0.0,
+                            "criteria_used": ["session_validation"],
+                            "strengths": [],
+                            "weaknesses": ["Invalid session reference"],
+                            "market_context": "Cannot continue without valid session"
+                        },
+                        "_metadata": {
+                            "sessionId": session_id,
+                            "process_sequence": [],
+                            "timestamp": start_time.isoformat(),
+                            "processing_time": 0.0
+                        }
+                    }
                 self.current_session_id = session_id
-                # Load conversation history if needed
-                print(f"[SESSION_LOAD] Loading conversation history...")
                 self._load_session_history(session_id)
-                print(f"[SESSION_HISTORY] Loaded {len(self.conversation_history)} previous messages")
+                print(f"Loaded session history for session ID: {session_id}")
+                print(f"Current conversation history: {self.conversation_history}")
             else:
-                # Create new session
-                new_session = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                print(f"[SESSION_CREATE] Creating new session: {new_session}")
-                self.current_session_id = new_session
+                self.current_session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                 self.conversation_history = []
-            
+                print(f"Created new session with ID: {self.current_session_id}")
+                print(f"Current conversation history: {self.conversation_history}")
+
             # Extract user query
-            print(f"[STEP_4] Extracting user query from messages...")
             user_query = self.task_handler.extract_user_query(messages)
-            print(f"[USER_QUERY] Length: {len(user_query)} chars, Content: '{user_query[:100]}{'...' if len(user_query) > 100 else ''}'")
             if not user_query.strip():
-                print(f"[ERROR] Empty user query detected")
-                return self.task_handler.create_failed_task(
-                    start_time=start_time,
-                    reason="No user query found",
-                    session_id=self.current_session_id
-                )
+                return {
+                    "status": "input_required",
+                    "data": {
+                        "specific_need": "User query is required to provide career guidance",
+                        "suggested_context": "Please provide your career question or area of interest",
+                        "why_needed": "Cannot analyze career needs without user input"
+                    },
+                    "analysis": {
+                        "reasoning": "No user query found - career analysis requires user input",
+                        "confidence_score": 0.0,
+                        "criteria_used": ["query_validation"],
+                        "strengths": [],
+                        "weaknesses": ["Missing user query"],
+                        "market_context": "Ready to analyze once query is provided"
+                    },
+                    "_metadata": {
+                        "sessionId": self.current_session_id,
+                        "process_sequence": [],
+                        "timestamp": start_time.isoformat(),
+                        "processing_time": (datetime.now() - start_time).total_seconds()
+                    }
+                }
             
-            # Direct processing - let AI decide what context it needs
-            print(f"[STEP_5] Processing with AI (no pre-enhancement)...")
+            # Process with AI
             result = self._process_with_ai(user_query, messages, metadata)
-            print(f"[AI_RESULT] Success: {result.get('success')}, Used response tool: {result.get('used_response_tool')}")
             
             # Save conversation
-            print(f"[STEP_7] Saving conversation history...")
             self._save_conversation_history(messages, result.get('final_response', ''))
-            print(f"[CONVERSATION_SAVED] Total messages in history: {len(self.conversation_history)}")
             
-            # Check if response_to_agent tool was used
-            print(f"[STEP_8] Checking tool usage...")
+            # Build simplified process_sequence (only tool calls, no outputs)
+            process_sequence = []
+            for history_item in self._current_tool_history:
+                if history_item.get('type') == 'function_call':
+                    process_sequence.append({
+                        "tool": history_item['name'],
+                        "args": history_item.get('args', {}),
+                        "timestamp": history_item['timestamp']
+                    })
+            
+            processing_time = (datetime.now() - start_time).total_seconds()
+            
+            # Return result based on whether response_to_agent was used
             if result.get('used_response_tool', False):
-                print(f"[TOOL_SUCCESS] response_to_agent tool was used - returning tool result")
                 tool_result = result.get('tool_response', {})
-                # Add tool history to metadata
-                if result.get('tool_history'):
-                    tool_result['metadata'] = tool_result.get('metadata', {})
-                    tool_result['metadata']['tool_history'] = result['tool_history']
+                # Add metadata to tool result
+                tool_result['_metadata'] = {
+                    "sessionId": self.current_session_id,
+                    "process_sequence": process_sequence,
+                    "timestamp": start_time.isoformat(),
+                    "processing_time": processing_time
+                }
                 return tool_result
             else:
-                print(f"[FALLBACK] response_to_agent tool was NOT used - using fallback logic")
-                # Fallback - create output (should not happen if AI follows instructions)
-                end_time = datetime.now()
+                # Convert fallback responses to unified format
+                final_response = result.get('final_response', '')
+                state = result.get('state', 'completed')
                 
-                if result.get('success', False):
-                    state = result.get('state', 'completed')
-                else:
-                    state = "failed"
+                # Try to parse JSON if available
+                if final_response.strip().startswith('{'):
+                    try:
+                        json_data = json.loads(final_response)
+                        if 'status' in json_data and 'data' in json_data and 'analysis' in json_data:
+                            # Already in unified format
+                            json_data['_metadata'] = {
+                                "sessionId": self.current_session_id,
+                                "process_sequence": process_sequence,
+                                "timestamp": start_time.isoformat(),
+                                "processing_time": processing_time
+                            }
+                            return json_data
+                    except json.JSONDecodeError:
+                        pass
                 
-                return self.task_handler.create_output_task(
-                    start_time=start_time,
-                    end_time=end_time,
-                    session_id=self.current_session_id,
-                    state=state,
-                    process_sequence=result.get('process_sequence', []),
-                    final_response=result.get('final_response', 'No response generated'),
-                    metadata={
-                        **metadata,
-                        "agent_type": "unified_career_advisor",
-                        "enhanced_processing": True,
-                        "session_id": self.current_session_id,
-                        "fallback_response": True,  # Indicates AI didn't use response_to_agent tool
-                        "asks_for_info": result.get('process_sequence', [{}])[0].get('asks_for_info', False),
-                        "tool_history": result.get('tool_history', [])
+                # Convert text response to unified format based on state
+                if state == "input_required":
+                    return {
+                        "status": "input_required",
+                        "data": {
+                            "specific_need": "Additional information needed for analysis",
+                            "suggested_context": "Please provide more details about your background",
+                            "why_needed": "Insufficient context for meaningful guidance"
+                        },
+                        "analysis": {
+                            "reasoning": "AI determined more user context is needed",
+                            "confidence_score": 0.2,
+                            "criteria_used": ["information_sufficiency"],
+                            "strengths": ["User engagement"],
+                            "weaknesses": ["Limited context provided"],
+                            "market_context": "Ready to analyze with additional information"
+                        },
+                        "_metadata": {
+                            "sessionId": self.current_session_id,
+                            "process_sequence": process_sequence,
+                            "timestamp": start_time.isoformat(),
+                            "processing_time": processing_time
+                        }
                     }
-                )
+                elif state == "failed":
+                    return {
+                        "status": "failed",
+                        "data": {
+                            "error_type": "PROCESSING_ERROR",
+                            "error_message": "Processing failed during career analysis",
+                            "fallback_guidance": "Please try again or rephrase your question",
+                            "suggested_action": "Retry with more specific career question"
+                        },
+                        "analysis": {
+                            "reasoning": "AI processing encountered an error",
+                            "confidence_score": 0.0,
+                            "criteria_used": ["error_handling"],
+                            "strengths": [],
+                            "weaknesses": ["Processing failure"],
+                            "market_context": "Unable to complete analysis"
+                        },
+                        "_metadata": {
+                            "sessionId": self.current_session_id,
+                            "process_sequence": process_sequence,
+                            "timestamp": start_time.isoformat(),
+                            "processing_time": processing_time
+                        }
+                    }
+                else:
+                    # Default completed - convert text to structured format
+                    return {
+                        "status": "completed",
+                        "data": {
+                            "profile_assessment": {
+                                "inferred_background": "Based on query context",
+                                "experience_level": "general",
+                                "key_strengths": ["career inquiry"]
+                            },
+                            "career_recommendations": [{
+                                "role": "General Career Guidance",
+                                "match_confidence": 0.7,
+                                "reasoning": "Provided guidance based on available context",
+                                "growth_potential": "varies"
+                            }],
+                            "market_intelligence": {
+                                "job_opportunities": "varies by field",
+                                "salary_insights": {"range": "depends on specialization"},
+                                "demand_trend": "stable",
+                                "entry_barriers": "varies"
+                            },
+                            "skills_development": {
+                                "current_strengths": ["career awareness"],
+                                "priority_skills": [],
+                                "learning_path": "Based on AI recommendations"
+                            },
+                            "next_steps": ["Follow AI recommendations", "Consider specific areas"]
+                        },
+                        "analysis": {
+                            "reasoning": "Provided general career guidance based on available context",
+                            "confidence_score": 0.7,
+                            "criteria_used": ["general_guidance", "context_inference"],
+                            "strengths": ["Career awareness", "Seeking guidance"],
+                            "weaknesses": ["Limited specific context"],
+                            "market_context": "General career market considerations"
+                        },
+                        "_metadata": {
+                            "sessionId": self.current_session_id,
+                            "process_sequence": process_sequence,
+                            "timestamp": start_time.isoformat(),
+                            "processing_time": processing_time,
+                            "fallback_conversion": True,
+                            "original_response": final_response[:500]  # Truncate for brevity
+                        }
+                    }
             
         except Exception as e:
-            return self.task_handler.create_failed_task(
-                start_time=start_time,
-                reason=f"Processing error: {str(e)}",
-                session_id=getattr(self, 'current_session_id', None),
-                metadata={"error_details": str(e)}
-            )
+            processing_time = (datetime.now() - start_time).total_seconds()
+            return {
+                "status": "failed",
+                "data": {
+                    "error_type": "SYSTEM_ERROR",
+                    "error_message": f"System error: {str(e)}",
+                    "fallback_guidance": "Please try again or contact support",
+                    "suggested_action": "Retry the request or report the issue"
+                },
+                "analysis": {
+                    "reasoning": f"Unexpected system error: {str(e)}",
+                    "confidence_score": 0.0,
+                    "criteria_used": ["error_handling"],
+                    "strengths": [],
+                    "weaknesses": ["System error"],
+                    "market_context": "Unable to access career analysis system"
+                },
+                "_metadata": {
+                    "sessionId": getattr(self, 'current_session_id', None),
+                    "process_sequence": [],
+                    "timestamp": start_time.isoformat(),
+                    "processing_time": processing_time,
+                    "error_details": str(e)
+                }
+            }
     
     def _process_with_ai(self, user_query: str, original_messages: List[Dict[str, Any]], metadata: Dict[str, Any] = None) -> Dict[str, Any]:
         """Process the user query with AI career counseling - AI decides what context it needs."""
@@ -482,140 +647,101 @@ class UnifiedCareerAdvisor:
             print(f"[AI_MODEL] Using model: gemini-2.5-flash")
             print(f"[AI_TOOLS_CONFIG] Function calling mode: AUTO")
             
-            # Retry loop for AI processing until response_to_agent tool is called
-            max_attempts = 10
-            attempt = 0
+            # Single attempt - AI decides whether to use response_to_agent tool or respond normally
+            print(f"\n[AI_PROCESSING] Starting AI generation...")
+            start_time = datetime.now()
+            
+            # Generate response with API key rotation
+            try:
+                response = self._safe_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=conversation_history,
+                    config=config
+                )
+            except Exception as api_error:
+                print(f"[AI_API_ERROR] API call failed after retries: {api_error}")
+                raise api_error
+            
+            end_time = datetime.now()
+            processing_time = (end_time - start_time).total_seconds()
+            print(f"[AI_RESPONSE_TIME] AI response time: {processing_time:.2f} seconds")
+            
+            # Process AI response parts
+            tool_history = getattr(self, '_current_tool_history', [])
             used_response_tool = False
             tool_response = None
+            final_text = ""
             
-            while attempt < max_attempts and not used_response_tool:
-                attempt += 1
-                print(f"\n[AI_ATTEMPT_{attempt}] Starting AI generation attempt {attempt}/{max_attempts}")
-                start_time = datetime.now()
+            if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
+                parts = response.candidates[0].content.parts
                 
-                # Generate response with API key rotation
-                try:
-                    response = self._safe_api_call(
-                        self.client.models.generate_content,
-                        model="gemini-2.5-flash",
-                        contents=conversation_history,
-                        config=config
-                    )
-                except Exception as api_error:
-                    print(f"[AI_API_ERROR] API call failed after retries: {api_error}")
-                    # If it's a non-retryable error or all keys failed, break the attempt loop
-                    if '400' in str(api_error).lower():
-                        print(f"[AI_ERROR] 400 error - stopping all attempts")
-                        raise api_error
-                    else:
-                        # For other errors, continue to next attempt if available
-                        continue
-                
-                end_time = datetime.now()
-                processing_time = (end_time - start_time).total_seconds()
-                print(f"[AI_RESPONSE_TIME] AI response time: {processing_time:.2f} seconds")
-                
-                # Process AI response parts
-                tool_history = getattr(self, '_current_tool_history', [])
-                
-                if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
-                    parts = response.candidates[0].content.parts
-                    
-                    # Process all parts in this response
-                    for part in parts:
-                        if hasattr(part, 'function_call') and part.function_call:
-                            func_name = part.function_call.name
-                            
-                            # If response_to_agent is called, execute it and exit loop
-                            if func_name == 'response_to_agent':
-                                try:
-                                    args = dict(part.function_call.args) if part.function_call.args else {}
-                                    # Always override sessionId with backend's current session
-                                    args['sessionId'] = self.current_session_id
-                                    tool_response = self.response_to_agent_tool(**args)
-                                    used_response_tool = True
-                                    
-                                    # Add to tool history
-                                    tool_history.append({
-                                        "type": "function_call",
-                                        "name": func_name,
-                                        "args": args,
-                                        "timestamp": datetime.now().isoformat()
-                                    })
-                                    
-                                    break  # Exit part loop
-                                except Exception as e:
-                                    print(f"[ERROR] Error executing response_to_agent: {e}")
-                            
-                            # Log other tool calls for history
-                            elif func_name in ['query_database', 'get_similar_jobs_by_embedding']:
+                # Process all parts in this response
+                for part in parts:
+                    if hasattr(part, 'function_call') and part.function_call:
+                        func_name = part.function_call.name
+                        
+                        # If response_to_agent is called, execute it
+                        if func_name == 'response_to_agent':
+                            try:
                                 args = dict(part.function_call.args) if part.function_call.args else {}
+                                tool_response = self.response_to_agent_tool(**args)
+                                used_response_tool = True
+                                
+                                # Add to tool history
                                 tool_history.append({
                                     "type": "function_call",
                                     "name": func_name,
                                     "args": args,
                                     "timestamp": datetime.now().isoformat()
                                 })
-                                        
-                        elif hasattr(part, 'function_response') and part.function_response:
-                            # Log tool responses
-                            response_content = part.function_response.response
+                                
+                                print(f"[TOOL_SUCCESS] response_to_agent tool was used")
+                                break  # Exit part loop
+                            except Exception as e:
+                                print(f"[ERROR] Error executing response_to_agent: {e}")
+                        
+                        # Log other tool calls for history (no outputs, just calls)
+                        elif func_name in ['query_database', 'get_similar_jobs_by_embedding']:
+                            args = dict(part.function_call.args) if part.function_call.args else {}
                             tool_history.append({
-                                "type": "function_response",
-                                "name": part.function_response.name,
-                                "response": response_content,
+                                "type": "function_call",
+                                "name": func_name,
+                                "args": args,
                                 "timestamp": datetime.now().isoformat()
                             })
-                                
-                        elif hasattr(part, 'text') and part.text:
-                            text_content = part.text
-                            if not used_response_tool:
-                                # Add reasoning text to history
-                                tool_history.append({
-                                    "type": "ai_reasoning",
-                                    "content": text_content,
-                                    "timestamp": datetime.now().isoformat()
-                                })
-                
-                # Store tool history for this session
-                self._current_tool_history = tool_history
-                
-                # If response_to_agent was not called, prepare for next attempt
-                if not used_response_tool:
-                    print(f"[ATTEMPT_{attempt}_RESULT] response_to_agent tool NOT called - continuing...")
-                    if attempt < max_attempts:
-                        # Add AI's reasoning to conversation for next attempt
-                        if response.text:
-                            reasoning_text = f"Previous reasoning attempt {attempt}: {response.text}"
-                            conversation_history.append(
-                                types.Content(role="model", parts=[types.Part(text=reasoning_text)])
-                            )
-                            conversation_history.append(
-                                types.Content(role="user", parts=[types.Part(text="Continue with analysis and call response_to_agent tool when ready with final answer.")])
-                            )
-                        print(f"[RETRY_PREP] Added reasoning to conversation history for attempt {attempt + 1}")
-                    else:
-                        print(f"[MAX_ATTEMPTS_REACHED] Reached maximum {max_attempts} attempts without response_to_agent tool")
+                                    
+                    elif hasattr(part, 'function_response') and part.function_response:
+                        # Skip logging function responses to keep history light
+                        pass
+                            
+                    elif hasattr(part, 'text') and part.text:
+                        final_text += part.text
+                        # Skip logging AI text to keep history light
+            
+            # Store tool history for this session
+            self._current_tool_history = tool_history
             
             # Return result based on whether response_to_agent was used
             if used_response_tool and tool_response:
-                print(f"[FINAL_SUCCESS] response_to_agent tool was successfully called after {attempt} attempts")
+                print(f"[FINAL_SUCCESS] response_to_agent tool was successfully called")
                 return {
                     "success": True,
                     "used_response_tool": True,
                     "tool_response": tool_response,
-                    "final_response": tool_response.get('final_response', ''),
-                    "state": tool_response.get('state', 'completed'),
-                    "attempts_taken": attempt,
+                    "final_response": str(tool_response),  # Convert to string for compatibility
+                    "state": tool_response.get('status', 'completed'),  # Use 'status' from new format
                     "tool_history": getattr(self, '_current_tool_history', [])
                 }
             
-            # Fallback processing if response_to_agent tool wasn't used after all attempts
-            final_text = response.text if 'response' in locals() else "No response generated"
-            print(f"   [FALLBACK_WARNING] response_to_agent tool was NOT used after {attempt} attempts")
-            print(f"   [FALLBACK_REASON] AI may need more context or different instruction approach")
+            # Normal processing - AI responded with text (this is now acceptable)
+            if not final_text.strip():
+                final_text = response.text if hasattr(response, 'text') else "No response generated"
             
-            # Try to parse JSON response from text (fallback)
+            print(f"[AI_TEXT_RESPONSE] AI provided text response without using response_to_agent tool")
+            print(f"[RESPONSE_LENGTH] {len(final_text)} characters")
+            
+            # Try to parse JSON response from text if it looks like structured data
             try:
                 import json
                 import re
@@ -626,8 +752,10 @@ class UnifiedCareerAdvisor:
                     json_text = json_match.group(0)
                     json_response = json.loads(json_text)
                     
-                    # Extract state from JSON
+                    # Extract status from JSON
                     status = json_response.get('status', 'completed')
+                    
+                    print(f"[JSON_DETECTED] Found JSON response with status: {status}")
                     
                     # Map JSON status to our state format
                     if status == 'input_required':
@@ -663,32 +791,30 @@ class UnifiedCareerAdvisor:
                     }
                 
             except (json.JSONDecodeError, AttributeError):
-                # If JSON extraction/parsing fails, continue with fallback
+                # If JSON extraction/parsing fails, treat as regular text response
+                print(f"[TEXT_RESPONSE] AI provided regular text response (not JSON)")
                 pass
             
-            # Final fallback - if AI didn't use response_to_agent tool as instructed
-            # This should rarely happen if system instruction is followed
+            # Handle regular text responses - this is now normal behavior
+            # AI can respond with text and only use response_to_agent when ready with final result
             final_text_lower = final_text.lower()
             
-            # Let AI model determine state naturally from its response content
-            # No hard-coded keywords - rely on AI's structured JSON response
-            if 'input_required' in final_text_lower or 'input_required' in final_text_lower:
+            # Intelligent state detection from response content
+            if any(phrase in final_text_lower for phrase in ['need more information', 'could you tell me', 'what is your', 'need to know']):
                 state = "input_required"
                 response_type = "information_request"
                 asks_for_info = True
-            elif 'failed' in final_text_lower or 'error' in final_text_lower:
+            elif any(phrase in final_text_lower for phrase in ['error', 'failed', 'unable to', 'cannot process']):
                 state = "failed"
                 response_type = "error"
                 asks_for_info = False
             else:
-                # Default to completed - AI should have provided complete response
+                # Default to completed - treat normal response as career advice
                 state = "completed"
                 response_type = "career_advice"
                 asks_for_info = False
             
-            # Log fallback usage (should not happen often)
-            print(f"   [FALLBACK_STATE] Determined state from content: {state}")
-            print(f"   [FALLBACK_NOTE] AI should use response_to_agent tool instead")
+            print(f"[TEXT_STATE] Determined state from text content: {state}")
             
             return {
                 "success": True,
@@ -801,13 +927,16 @@ class UnifiedCareerAdvisor:
 def get_career_advice(task: Dict[str, Any]) -> Dict[str, Any]:
     """
     AI Career Advisor Agent for external agent-to-agent communication.
-    
+
+    - On the first call, do NOT send a sessionId (leave it as None or omit).
+    - On subsequent calls, you MUST send the sessionId from the previous response's _metadata.sessionId (when the response_to_agent tool was used).
+
     Provides intelligent career counseling with minimal information requirements:
     - Skills analysis and development recommendations  
     - Career path guidance and job market insights
     - Professional growth strategies and learning roadmaps
     - Market intelligence and salary analysis
-    
+
     INTELLIGENT PROCESSING:
     - Works with minimal user information through smart inference
     - Leverages database intelligence for market analysis
@@ -816,31 +945,59 @@ def get_career_advice(task: Dict[str, Any]) -> Dict[str, Any]:
 
     INPUT FORMAT (Agent-to-Agent):
     {
-        "sessionId": str | None,        # Optional on FIRST call, REQUIRED for subsequent calls for conversation continuity
+        "sessionId": str | None,        # Omit or set to None on FIRST call, REQUIRED for subsequent calls (use _metadata.sessionId from previous response)
         "message": List[Dict],          # Conversation messages [{"role": "user", "content": "query"}]
         "metadata": Dict                # Additional context (optional: images, urls, etc.)
     }
 
-    OUTPUT FORMAT (Standardized):
+    OUTPUT FORMAT (Unified Response Structure):
+    When response_to_agent tool is used (recommended):
+    {
+        "status": str,                  # "completed" | "failed" | "input_required"
+        "data": {                       # Content varies by status
+            "profile_assessment": {},    # Inferred user background and strengths
+            "career_recommendations": [], # Matched career paths with confidence
+            "market_intelligence": {},   # Job opportunities and salary insights
+            "skills_development": {},    # Priority skills and learning paths
+            "next_steps": []            # Actionable recommendations
+        },
+        "analysis": {                   # Required analysis section
+            "reasoning": str,           # Why this recommendation was made
+            "confidence_score": float,  # 0.0 to 1.0 confidence level
+            "criteria_used": [],        # Analysis criteria applied
+            "strengths": [],           # User's identified strengths
+            "weaknesses": [],          # Areas for improvement
+            "market_context": str      # Current market trends and positioning
+        },
+        "_metadata": {                  # Optional processing metadata
+            "sessionId": str,          # Session tracking
+            "process_sequence": [],    # Tool usage history
+            "timestamp": str           # Processing timestamp
+        }
+    }
+
+    Fallback FORMAT (when tool not used):
     {
         "start_time": str,              # Processing start timestamp (ISO format)
         "end_time": str,                # Processing end timestamp (ISO format)  
         "sessionId": str,               # Session ID for conversation tracking
         "state": str,                   # "completed" | "failed" | "input_required" 
         "process_sequence": List,       # Processing steps and tool usage log
-        "final_response": str,          # Structured JSON response with career guidance
-        "metadata": {                   # Processing metadata
-            "tool_history": List[Dict], # Complete tool execution history
-            "agent_type": str,          # "unified_career_advisor"
-            "reasoning_process": List   # AI reasoning and inference steps
-        }
+        "final_response": str,          # JSON string with career guidance
+        "metadata": Dict               # Processing metadata and tool history
     }
 
-    RESPONSE CONTENT STRUCTURE:
-    The final_response contains JSON with:
-    - status: "completed|failed|input_required"
-    - data: Career recommendations, market intelligence, skills analysis
-    - analysis: Reasoning, confidence scores, strengths/weaknesses assessment
+    RESPONSE STRUCTURE:
+    The function returns the unified format from response_to_agent tool:
+    - status: Processing state ("completed", "failed", "input_required")
+    - data: Career analysis results (profile, recommendations, market data, skills)
+    - analysis: Intelligence reasoning with confidence scores and market context
+    - _metadata: Optional processing information and session tracking
+
+    LEGACY SUPPORT:
+    If response_to_agent tool is not used, returns fallback format with:
+    - Standardized task response structure for compatibility
+    - final_response as JSON string containing the unified format data
 
     CORE CAPABILITIES:
     - Career path recommendations based on minimal user context
@@ -851,11 +1008,13 @@ def get_career_advice(task: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         task: Input task dictionary with message and optional metadata.
-              No strict format requirements - works with basic user information.
+              On the first call, do NOT send sessionId. On subsequent calls, use sessionId from previous response's _metadata.sessionId.
 
     Returns:
-        Structured career guidance response for agent consumption with complete
-        processing metadata and intelligent recommendations.
+        Unified career guidance response in the new format when response_to_agent
+        tool is used, or fallback compatibility format for legacy integration.
+        Contains intelligent career recommendations, market analysis, and 
+        actionable development guidance.
     """
     try:
         # Initialize agent
@@ -867,18 +1026,27 @@ def get_career_advice(task: Dict[str, Any]) -> Dict[str, Any]:
         return result
         
     except Exception as e:
-        # Return standardized error format
-        start_time = datetime.now()
+        # Return unified error format
         return {
-            "start_time": start_time.isoformat(),
-            "end_time": datetime.now().isoformat(),
-            "sessionId": task.get("sessionId") or "error_session",
-            "state": "failed",
-            "process_sequence": [{
-                "type": "error",
-                "content": f"Career advice error: {str(e)}",
-                "timestamp": datetime.now().isoformat()
-            }],
-            "final_response": f"Không thể xử lý yêu cầu tư vấn nghề nghiệp: {str(e)}",
-            "metadata": {"error": str(e), "agent_type": "unified_career_advisor"}
+            "status": "failed",
+            "data": {
+                "error_type": "SYSTEM_ERROR",
+                "error_message": f"Career advice system error: {str(e)}",
+                "fallback_guidance": "Please try again or contact support for assistance",
+                "suggested_action": "Retry the request or provide more context"
+            },
+            "analysis": {
+                "reasoning": f"System error prevented career analysis: {str(e)}",
+                "confidence_score": 0.0,
+                "criteria_used": ["error_handling"],
+                "strengths": [],
+                "weaknesses": ["System unavailable"],
+                "market_context": "Unable to access career guidance system"
+            },
+            "_metadata": {
+                "sessionId": task.get("sessionId", "error_session"),
+                "timestamp": datetime.now().isoformat(),
+                "error_details": str(e),
+                "agent_type": "unified_career_advisor"
+            }
         }

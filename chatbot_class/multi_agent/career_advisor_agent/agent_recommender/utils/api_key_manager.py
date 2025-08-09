@@ -16,7 +16,7 @@ class APIKeyManager:
         """
         if not key_file_path:
             # Mặc định sử dụng file key.txt ở thư mục gốc
-            self.key_file_path = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) / "key.txt"
+            self.key_file_path = Path(__file__).resolve().parents[5] / "key.txt"
         else:
             self.key_file_path = Path(key_file_path)
             

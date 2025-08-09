@@ -17,7 +17,7 @@ import os
 
 # Import career advisor directly
 try:
-    from chatbot_class.multi_agent.career_advisor_agent.unified_career_advisor import get_career_advice
+    from .multi_agent.career_advisor_agent.agent_recommender.unified_career_advisor import get_career_advice
     CAREER_ADVISOR_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ Career advisor not available: {e}")

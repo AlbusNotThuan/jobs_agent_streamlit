@@ -33,14 +33,18 @@ class TaskHandler:
     }
     """
     
-    def __init__(self, conversations_dir: str = "conversations"):
+    def __init__(self, conversations_dir: str = None):
         """
         Initialize task handler.
         
         Args:
             conversations_dir: Directory to store conversation sessions
         """
-        self.conversations_dir = conversations_dir
+        if conversations_dir is None:
+            # Lưu conversations ở cùng cấp với file này
+            self.conversations_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conversations')
+        else:
+            self.conversations_dir = conversations_dir
         self._ensure_conversations_dir()
     
     def _ensure_conversations_dir(self) -> None:
