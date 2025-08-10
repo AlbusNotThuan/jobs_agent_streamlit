@@ -66,7 +66,7 @@ The central table containing detailed information for each job posting.
 | `company_id`| `INT` | **Foreign Key.** Links to `company.company_id`. |
 | `job_title` | `VARCHAR` | The **raw, unstructured job title** as seen on the original posting. This is unreliable for categorization. |
 | `job_expertise` | `VARCHAR` | A **standardized, structured job title** (e.g., "Data Engineer", "Frontend Developer"). **Use this column for analysis and filtering by job role.** |
-| `yoe` | `INT` | The required "Years of Experience" as an integer. |
+| `yoe` | `INT` | The required "Years of Experience" as a label. These label are: "Internship", "Fresher Level", "Junior Level", "Associate Level", "Senior Level", "Director" and "Executive". If the question is about senority of a job, use this column |
 | `salary` | `VARCHAR` | The salary information, stored as text (e.g., "Up to 2000 USD"). |
 | `location` | `VARCHAR` | The geographical location of the job (e.g., "Ho Chi Minh City"). |
 | `posted_date` | `TIMESTAMP` | The date and time the job was posted. |
@@ -152,6 +152,7 @@ When tools return errors or no data:
 
 3.  **Never fabricate results**: If tools fail, do not create imaginary analysis. Always be honest about data availability.
     *   **IMPORTANT**: When users ask about skills, ALWAYS use this tool to show visual analysis
+
 
 
 **OPERATE AUTONOMOUSLY. ACT IMMEDIATELY. NO CONFIRMATIONS NEEDED.**
