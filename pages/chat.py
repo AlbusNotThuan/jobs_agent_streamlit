@@ -417,7 +417,7 @@ class StreamlitSkillsAnalyzerChatbot:
                         'thinking_process': chat_result.get("process_sequence", []),
                         'charts': [],
                         'debug_info': debug_output if st.session_state.get('show_debug_info', True) else None,
-                        'career_mode': chat_result.get("career_mode", False) or st.session_state.career_advisor_mode
+                        'career_mode': False  # Always skills analyzer mode
                     }
                     
                     # Extract and store chart data
@@ -1128,121 +1128,56 @@ I can:
 
     # Sidebar with help information and controls
     with st.sidebar:
-        # Mode Selection Switch
-        st.header("🎯 Operating Mode")
+        # Chat Controls
+        st.markdown("""
+        **🔧 Skills Analyzer:**
+        - Analyze job market trends
+        - Hot skills analysis
+        - Industry statistics
+        - Charts and reports
         
-        # Initialize mode in session state if not exists
-        if 'career_advisor_mode' not in st.session_state:
-            st.session_state.career_advisor_mode = False
-        
-        # Mode toggle buttons
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            skills_button_style = "primary" if not st.session_state.career_advisor_mode else "secondary"
-            if st.button(
-                "🔧 Skills Analyzer", 
-                type=skills_button_style,
-                help="Analyze job market and skills data",
-                use_container_width=True
-            ):
-                st.session_state.career_advisor_mode = False
-                if 'chatbot' in st.session_state:
-                    st.session_state.chatbot.chatbot.toggle_career_advisor_mode(False)
-                st.rerun()
-        
-        with col2:
-            career_button_style = "primary" if st.session_state.career_advisor_mode else "secondary"
-            if st.button(
-                "🎯 Career Advisor", 
-                type=career_button_style,
-                help="Personalized career counseling",
-                use_container_width=True
-            ):
-                st.session_state.career_advisor_mode = True
-                if 'chatbot' in st.session_state:
-                    st.session_state.chatbot.chatbot.toggle_career_advisor_mode(True)
-                st.rerun()
-        
-        # Display current mode with styling
-        current_mode = "Career Advisor" if st.session_state.career_advisor_mode else "Skills Analyzer"
-        mode_emoji = "🎯" if st.session_state.career_advisor_mode else "🔧"
-        mode_color = "#FF6B6B" if st.session_state.career_advisor_mode else "#4ECDC4"
-        
-        st.markdown(f"""
-        <div style="
-            background-color: {mode_color}20;
-            border: 2px solid {mode_color};
-            border-radius: 10px;
-            padding: 10px;
-            text-align: center;
-            margin: 10px 0px;
-        ">
-            <strong>{mode_emoji} {current_mode} Mode</strong>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Mode-specific help text
-        if st.session_state.career_advisor_mode:
-            st.markdown("""
-            **🎯 Career Advisor Mode:**
-            - Analyze personality and interests
-            - Provide suitable career advice
-            - Career development roadmap
-            - Skill learning recommendations
-            
-            *Example: "I'm good at math, love technology, want career advice"*
-            """)
-        else:
-            st.markdown("""
-            **🔧 Skills Analyzer Mode:**
-            - Analyze job market trends
-            - Hot skills analysis
-            - Industry statistics
-            - Charts and reports
-            
-            *Example: "analyze trending skills", "top programming jobs"*
-            """)
+        *Example: "analyze trending skills", "top programming jobs"*
+        """)
         
         st.divider()
         
         # Chatbot controls
         st.header("⚙️ Chatbot Settings")
         
-        # Debug mode toggle
-        debug_mode = st.checkbox(
-            "🔍 Show Debug Info",
-            value=st.session_state.get('show_debug_info', True),
-            help="Show thinking process, tool calls, and debug information"
-        )
-        if debug_mode != st.session_state.get('show_debug_info', True):
-            st.session_state.chatbot.set_debug_mode(debug_mode)
+        # # Debug mode toggle
+        # debug_mode = st.checkbox(
+        #     "🔍 Show Debug Info",
+        #     value=st.session_state.get('show_debug_info', True),
+        #     help="Show thinking process, tool calls, and debug information"
+        # )
+        # if debug_mode != st.session_state.get('show_debug_info', True):
+        #     st.session_state.chatbot.set_debug_mode(debug_mode)
         
-        # Generation preset
-        preset = st.selectbox(
-            "Generation Mode:",
-            ["balanced", "analytical", "focused", "creative"],
-            index=0,
-            help="Choose the AI generation style"
-        )
-        if st.button("Apply Preset"):
-            st.session_state.chatbot.set_generation_preset(preset)
-            st.success(f"Applied '{preset}' preset!")
+        # # Generation preset
+        # preset = st.selectbox(
+        #     "Generation Mode:",
+        #     ["balanced", "analytical", "focused", "creative"],
+        #     index=0,
+        #     help="Choose the AI generation style"
+        # )
+        # if st.button("Apply Preset"):
+        #     st.session_state.chatbot.set_generation_preset(preset)
+        #     st.success(f"Applied '{preset}' preset!")
         
-        # Thinking budget
-        thinking_budget = st.slider(
-            "Thinking Budget (tokens):",
-            min_value=1024,
-            max_value=8192,
-            value=4096,
-            step=512,
-            help="How much thinking the AI can do"
-        )
-        if st.button("Set Thinking Budget"):
-            st.session_state.chatbot.set_thinking_budget(thinking_budget)
-            st.success(f"Set thinking budget to {thinking_budget} tokens!")
+        # # Thinking budget
+        # thinking_budget = st.slider(
+        #     "Thinking Budget (tokens):",
+        #     min_value=1024,
+        #     max_value=8192,
+        #     value=4096,
+        #     step=512,
+        #     help="How much thinking the AI can do"
+        # )
+        # if st.button("Set Thinking Budget"):
+        #     st.session_state.chatbot.set_thinking_budget(thinking_budget)
+        #     st.success(f"Set thinking budget to {thinking_budget} tokens!")
         
-        st.divider()
+        # st.divider()
         
         # Session controls
         col1, col2 = st.columns(2)
@@ -1292,22 +1227,16 @@ I can:
     if 'chatbot' not in st.session_state:
         st.session_state.chatbot = StreamlitSkillsAnalyzerChatbot()
     
-    # Sync chatbot mode with session state
+    # Ensure chatbot is always in skills analyzer mode
     if hasattr(st.session_state.chatbot, 'chatbot'):
-        current_chatbot_mode = st.session_state.chatbot.chatbot.is_career_advisor_mode()
-        if current_chatbot_mode != st.session_state.career_advisor_mode:
-            st.session_state.chatbot.chatbot.toggle_career_advisor_mode(st.session_state.career_advisor_mode)
+        st.session_state.chatbot.chatbot.toggle_career_advisor_mode(False)
 
     # Display chat history with enhanced formatting
     st.session_state.chatbot.display_conversation_with_debug()
 
     # Chat input
     if st.session_state.session_active:
-        # Dynamic placeholder based on mode
-        if st.session_state.career_advisor_mode:
-            placeholder = "Ví dụ: 'Tôi giỏi toán, thích công nghệ, muốn tư vấn nghề nghiệp phù hợp...'"
-        else:
-            placeholder = "Ask me about job market skills and trends..."
+        placeholder = "Ask me about job market skills and trends..."
             
         user_input = st.chat_input(placeholder)
         

@@ -80,8 +80,10 @@ class SkillsAnalyzerChatbot:
             current_key = self.api_key_manager.get_current_key()
             print(f"[API_MANAGER] Using API key index: {self.api_key_manager.current_index}")
         except Exception as e:
-            raise ValueError(f"Failed to initialize API key manager: {e}")
-        
+            print(f"⚠️ Failed to initialize API key manager: {e}")
+            print(f"Using key from system secret")
+            current_key = os.getenv("GEMINI_API_KEY")
+
         # Initialize Gemini client
         self.client = genai.Client(api_key=current_key)
         
