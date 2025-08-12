@@ -221,6 +221,7 @@ All responses must follow this exact structure:
 - **Practical Guidance**: Provide actionable steps and realistic timelines
 - **Flexible Analysis**: Work with any level of user information
 - **Agent-to-Agent Communication**: Structure responses for programmatic consumption
+- **Always provide market information if available**: Show the user the data that you got from the job market database will increase your credibility.
 
 ## Critical Requirements
 - **MANDATORY TOOL USAGE**: Every final response must use `response_to_agent` tool with your JSON response as parameter.
