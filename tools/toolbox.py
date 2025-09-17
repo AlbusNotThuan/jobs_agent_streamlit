@@ -128,7 +128,7 @@ def plot_skill_trend(skills: Union[str, List[str]]) -> Dict[str, Any]:
     print(f"🛠️ Executing plot_skill_trend for: {skills}")
     try:
         # ... (Implementation from previous step remains the same)
-        four_weeks_ago = (datetime.now() - timedelta(weeks=4)).strftime('%Y-%m-%d')
+        four_weeks_ago = (datetime.now() - timedelta(weeks=8)).strftime('%Y-%m-%d')
         skill_patterns = [f"%{skill}%" for skill in skills]
         sql_query = """
         SELECT DATE(j.posted_date) as post_date, s.name as item_name, COUNT(DISTINCT j.job_id) as frequency

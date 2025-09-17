@@ -1009,14 +1009,68 @@ class StreamlitSkillsAnalyzerChatbot:
                 
                 # Convert data to format suitable for Streamlit
                 data_for_chart = {}
-                for key, value in chart_data_dict.items():
-                    data_for_chart[key] = float(value)
+                
+                # Handle different data formats
+                if isinstance(chart_data_dict, dict):
+                    for key, value in chart_data_dict.items():
+                        try:
+                            # Convert value to float, handling lists/nested structures
+                            if isinstance(value, (list, tuple)):
+                                # If it's a list, take the first numeric value or sum
+                                numeric_values = [v for v in value if isinstance(v, (int, float))]
+                                data_for_chart[str(key)] = float(numeric_values[0]) if numeric_values else 0.0
+                            elif isinstance(value, (int, float)):
+                                data_for_chart[str(key)] = float(value)
+                            else:
+                                # Try to convert string to float
+                                data_for_chart[str(key)] = float(str(value))
+                        except (ValueError, TypeError, IndexError):
+                            # Skip invalid values
+                            continue
+                elif isinstance(chart_data_dict, list):
+                    # Handle list format - convert to simple indexed data
+                    for i, value in enumerate(chart_data_dict):
+                        try:
+                            data_for_chart[f"Item {i+1}"] = float(value)
+                        except (ValueError, TypeError):
+                            continue
+                else:
+                    st.warning("⚠️ Chart data format not supported for bar chart")
+                    return
                     
-                st.bar_chart(data_for_chart)
+                if data_for_chart:
+                    st.bar_chart(data_for_chart)
+                else:
+                    st.warning("⚠️ No valid numeric data found for bar chart")
                 
             elif chart_type == "line_chart":
                 st.markdown(f"**📈 {title}**")
-                st.line_chart(chart_data_dict)
+                
+                # Handle line chart data format
+                try:
+                    if isinstance(chart_data_dict, dict):
+                        # Check if it's in pandas DataFrame format (split)
+                        if 'data' in chart_data_dict and 'index' in chart_data_dict and 'columns' in chart_data_dict:
+                            # Reconstruct DataFrame from split format
+                            import pandas as pd
+                            chart_df = pd.DataFrame(
+                                chart_data_dict['data'],
+                                index=pd.to_datetime(chart_data_dict['index']),
+                                columns=chart_data_dict['columns']
+                            )
+                            st.line_chart(chart_df)
+                        else:
+                            # Simple dict format
+                            st.line_chart(chart_data_dict)
+                    elif isinstance(chart_data_dict, list):
+                        # Convert list to simple line chart
+                        import pandas as pd
+                        chart_df = pd.DataFrame(chart_data_dict, columns=['Value'])
+                        st.line_chart(chart_df)
+                    else:
+                        st.warning("⚠️ Chart data format not supported for line chart")
+                except Exception as line_error:
+                    st.warning(f"⚠️ Error creating line chart: {line_error}")
             
             else:
                 st.warning(f"⚠️ Unsupported chart type: {chart_type}")
